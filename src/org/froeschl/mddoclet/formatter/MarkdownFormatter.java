@@ -1,63 +1,61 @@
 package org.froeschl.mddoclet.formatter;
 
-import java.util.Map;
-import java.util.Map.Entry;
 
 public class MarkdownFormatter implements Formatter {
     private static final String LF = "\n";
+    private static final String DLF = "\n\n";
+    private static final String WS = " ";
     private static final String SHARP = "#";
-    private static final String OPENING_BRACKETS = "(";
-    private static final String CLOSING_BRACKETS = ")";
-    private static final String OPENING_SQUARE_BRACKETS = "[";
-    private static final String CLOSING_SQUARE_BRACKETS = "]";
-    private static final String FORMATTER_HEADING = "===";
-    private static final String FORMATTER_SUB_HEADING = "---";
-    private static final String FORMATTER_TABLE_SEPARATOR = "|";
+    private static final String LINK_FORMAT = "[%s](#%s)";
+    private static final String ANCHOR_FORMAT = "<a name=\"%s\"> %s </a>";
+    private static final String TABLE_HEADER = "---";
+    private static final String TABLE_SEPARATOR = "|";
     private static final String FORMATTER_BOLD = "**";
-    private static final String SECTION_SEPARATOR = LF + LF + FORMATTER_SUB_HEADING + LF + LF;
+    private static final String HORIZONTAL_RULE = LF + LF + "-------------------------" + LF + LF;
     
-    private static final String HEADING_CLASSES = "Classes";
-    private static final String HEADING_CLASS = "Class";
-    private static final String HEADING_DESCRIPTION = "Description";
     private static final String EMPTY_CELL = "-";
     
     @Override
-    public String formatClassList(Map<String, String> classNamesAndDescriptions) {
-        String result = MarkdownFormatter.createHeading(HEADING_CLASSES);
-        result += MarkdownFormatter.createTableHeader(HEADING_CLASS, HEADING_DESCRIPTION);
+    public String createHeading(String text, int headingLevel) {
+        String formatterHeading = "";
         
-        for ( Entry<String, String> entry : classNamesAndDescriptions.entrySet() ) {
-            String classLink = MarkdownFormatter.createLink(entry.getKey(), entry.getKey());
-            result += MarkdownFormatter.createTableRow(classLink, entry.getValue());
+        if ( headingLevel < 1 ) {
+            headingLevel = 1;
         }
         
-        result += SECTION_SEPARATOR;
-        return result;
+        for ( int i = 0; i < headingLevel; ++i ) {
+            formatterHeading += SHARP;
+        }
+        
+        return DLF + formatterHeading + WS + text + WS + formatterHeading + DLF;
     }
     
-    private static String createHeading(String text) {
-        return text + LF + FORMATTER_HEADING + LF + LF;
+    @Override
+    public String createParagraph(String text) {
+        return DLF + text + DLF; 
     }
     
-    private static String createTableHeader(String ... elements) {
-        String result = FORMATTER_TABLE_SEPARATOR;
+    @Override
+    public String createTableHeader(String ... elements) {
+        String result = TABLE_SEPARATOR;
         
         for( String element : elements ) {
-            result += FORMATTER_BOLD + element + FORMATTER_BOLD + FORMATTER_TABLE_SEPARATOR;
+            result += FORMATTER_BOLD + element + FORMATTER_BOLD + TABLE_SEPARATOR;
         }
         
-        result += LF + FORMATTER_TABLE_SEPARATOR;
+        result += LF + TABLE_SEPARATOR;
         
         for( int i = 0; i < elements.length; ++i ) {
-            result += FORMATTER_SUB_HEADING + FORMATTER_TABLE_SEPARATOR;
+            result += TABLE_HEADER + TABLE_SEPARATOR;
         }
         
         result += LF;
         return result;
     }
     
-    private static String createTableRow(String ... elements) {
-        String result = FORMATTER_TABLE_SEPARATOR;
+    @Override
+    public String createTableRow(String ... elements) {
+        String result = TABLE_SEPARATOR;
         
         for( String element : elements ) {
             if ( element == null || element.isEmpty() ) {
@@ -70,15 +68,27 @@ public class MarkdownFormatter implements Formatter {
                 element = element.substring(0, position);
             }
             
-            result += element + FORMATTER_TABLE_SEPARATOR;
+            result += element + TABLE_SEPARATOR;
         }
         
         result += LF;
         return result;
     }
     
-    private static String createLink(String title, String link) {
+    @Override
+    public String createLink(String text, String link) {
         // [AccountAccess](#AccountAccess)
-        return OPENING_SQUARE_BRACKETS + title + CLOSING_SQUARE_BRACKETS + OPENING_BRACKETS + SHARP + link + CLOSING_BRACKETS;
+        return String.format(LINK_FORMAT, text, link);
+    }
+    
+    @Override
+    public String createAnchor(String text, String anchor) {
+        // <a name="Fresvii.startWithAppIdentifier"> startWithAppIdentifier: </a>
+        return String.format(ANCHOR_FORMAT, anchor, text);
+    }
+    
+    @Override
+    public String createHorizontalRule() {
+        return HORIZONTAL_RULE;
     }
 }
