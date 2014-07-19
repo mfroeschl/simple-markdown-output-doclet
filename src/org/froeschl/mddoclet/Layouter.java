@@ -467,7 +467,7 @@ public class Layouter {
     }
     
     private static String generateSnakeCaseFullMethodSignature(MethodDoc methodDoc) {
-        String fullMethodSignature = methodDoc.returnType() + WS + methodDoc.name() + methodDoc.flatSignature();
+        String fullMethodSignature = methodDoc.containingClass().qualifiedName() + WS + methodDoc.returnType() + WS + methodDoc.name() + methodDoc.flatSignature();
         fullMethodSignature = fullMethodSignature.replace(WS, SNAKE);
         fullMethodSignature = fullMethodSignature.replace(".", SNAKE);
         fullMethodSignature = fullMethodSignature.replace(" ", SNAKE);
