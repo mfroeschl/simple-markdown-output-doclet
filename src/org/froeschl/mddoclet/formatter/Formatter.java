@@ -7,11 +7,14 @@ public interface Formatter {
     public static final int HEADING_TWO = 3;
     public static final int HEADING_THREE = 4;
     
-    public String createHeading(String text, int headingLevel);
-    public String createParagraph(String text);
-    public String createTableHeader(String ... elements);
-    public String createTableRow(String ... elements);
-    public String createLink(String text, String link);
-    public String createAnchor(String text, String anchor);
-    public String createHorizontalRule();
+    public String heading(String text, int headingLevel);
+    public String paragraph(String text);
+    public String bold(String text);
+    public String codeBlock(String text);
+    public String tableHeader(String ... elements);
+    public String tableRow(String ... elements);
+    public String link(String text, String link);
+    public String anchor(String text, String anchor);
+    public String horizontalRule();
+    public String lineFeed();
 }

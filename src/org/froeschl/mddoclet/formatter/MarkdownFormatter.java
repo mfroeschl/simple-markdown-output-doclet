@@ -6,17 +6,18 @@ public class MarkdownFormatter implements Formatter {
     private static final String DLF = "\n\n";
     private static final String WS = " ";
     private static final String SHARP = "#";
+    private static final String CODE_BLOCK = "```";
     private static final String LINK_FORMAT = "[%s](#%s)";
     private static final String ANCHOR_FORMAT = "<a name=\"%s\"> %s </a>";
     private static final String TABLE_HEADER = "---";
     private static final String TABLE_SEPARATOR = "|";
-    private static final String FORMATTER_BOLD = "**";
+    private static final String BOLD = "**";
     private static final String HORIZONTAL_RULE = LF + LF + "-------------------------" + LF + LF;
     
     private static final String EMPTY_CELL = "-";
     
     @Override
-    public String createHeading(String text, int headingLevel) {
+    public String heading(String text, int headingLevel) {
         String formatterHeading = "";
         
         if ( headingLevel < 1 ) {
@@ -31,16 +32,26 @@ public class MarkdownFormatter implements Formatter {
     }
     
     @Override
-    public String createParagraph(String text) {
+    public String paragraph(String text) {
         return DLF + text + DLF; 
     }
     
     @Override
-    public String createTableHeader(String ... elements) {
+    public String bold(String text) {
+        return BOLD + text + BOLD; 
+    }
+    
+    @Override
+    public String codeBlock(String text) {
+        return DLF + CODE_BLOCK + LF + text + LF + CODE_BLOCK + DLF; 
+    }
+    
+    @Override
+    public String tableHeader(String ... elements) {
         String result = TABLE_SEPARATOR;
         
         for( String element : elements ) {
-            result += FORMATTER_BOLD + element + FORMATTER_BOLD + TABLE_SEPARATOR;
+            result += this.bold(element) + TABLE_SEPARATOR;
         }
         
         result += LF + TABLE_SEPARATOR;
@@ -54,7 +65,7 @@ public class MarkdownFormatter implements Formatter {
     }
     
     @Override
-    public String createTableRow(String ... elements) {
+    public String tableRow(String ... elements) {
         String result = TABLE_SEPARATOR;
         
         for( String element : elements ) {
@@ -76,19 +87,24 @@ public class MarkdownFormatter implements Formatter {
     }
     
     @Override
-    public String createLink(String text, String link) {
+    public String link(String text, String link) {
         // [AccountAccess](#AccountAccess)
         return String.format(LINK_FORMAT, text, link);
     }
     
     @Override
-    public String createAnchor(String text, String anchor) {
+    public String anchor(String text, String anchor) {
         // <a name="Fresvii.startWithAppIdentifier"> startWithAppIdentifier: </a>
         return String.format(ANCHOR_FORMAT, anchor, text);
     }
     
     @Override
-    public String createHorizontalRule() {
+    public String horizontalRule() {
         return HORIZONTAL_RULE;
+    }
+    
+    @Override
+    public String lineFeed() {
+        return WS + WS + LF;
     }
 }
