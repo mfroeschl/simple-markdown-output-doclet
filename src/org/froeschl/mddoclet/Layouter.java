@@ -60,7 +60,6 @@ public class Layouter {
     private static final String EXTENDS = "extends";
     private static final String IMPLEMENTS = "implements";
     private static final String ENUM = "enum";
-    private static final String INTERFACE = "interface";
     private static final String CLASS = "class";
     private static final String LINK_TAG = "@link";
     private static final String RETURN_TAG = "@return";
@@ -238,14 +237,14 @@ public class Layouter {
         String signature = classDoc.modifiers() + WS;
         
         if ( classDoc.isEnum() ) {
-            signature += ENUM;
+            signature += ENUM + WS ;
         } else if ( classDoc.isInterface() ) {
-            signature += INTERFACE;
+            // signature += INTERFACE;
         } else {
-            signature += CLASS;
+            signature += CLASS + WS;
         }
         
-        signature += WS + classDoc.name();
+        signature += classDoc.name();
         
         if ( classDoc.superclass() != null ) {
             signature += WS + EXTENDS + WS + classDoc.superclass().name();
