@@ -16,6 +16,7 @@ import org.froeschl.mddoclet.utils.FileUtils;
 
 import com.sun.javadoc.AnnotationDesc;
 import com.sun.javadoc.ClassDoc;
+import com.sun.javadoc.FieldDoc;
 import com.sun.javadoc.MemberDoc;
 import com.sun.javadoc.MethodDoc;
 import com.sun.javadoc.ParamTag;
@@ -33,6 +34,7 @@ public class Layouter {
     private static final String WS = " ";
     private static final String AT = "@";
     private static final String LF = "\n";
+    private static final String DOT = ".";
     private static final String COMMA = ",";
     private static final String BROPEN = "(";
     private static final String BRCLOSE = ")";
@@ -40,15 +42,20 @@ public class Layouter {
     
     private static final String HEADING_CLASSES = "Classes";
     private static final String HEADING_CLASS = "Class";
+    private static final String HEADING_ENUM = "Enum";
+    private static final String HEADING_INTERFACE = "Interface";
     private static final String HEADING_METHOD_SUMMARY = "Method Summary";
     private static final String HEADING_METHOD_DETAIL = "Method Detail";
     private static final String HEADING_METHOD = "Method";
     private static final String HEADING_PARAMETERS = "Parameters";
     private static final String HEADING_PARAMETER = "Parameter";
+    private static final String HEADING_FIELD_SUMMARY = "Field Summary";
+    private static final String HEADING_FIELD = "Field";
     private static final String HEADING_RETURNS = "Returns";
     private static final String HEADING_RETURN_TYPE = "Return Type";
     private static final String HEADING_DESCRIPTION = "Description";
     private static final String HEADING_HIERARCHY = "Hierarchy:";
+    private static final String EMPTY_BODY = "-";
     private static final String LAST_UPDATED = "Last updated";
     private static final String EXTENDS = "extends";
     private static final String IMPLEMENTS = "implements";
@@ -94,20 +101,8 @@ public class Layouter {
         }
     }
     
-    private static boolean isDocumented(MethodDoc methodDoc) {
-        return (methodDoc.paramTags().length > 0 || methodDoc.tags().length > 0 || methodDoc.inlineTags().length > 0);
-    }
-    
-    private static int countDocumentedMethods(List<MethodDoc> methods) {
-        int count = 0;
-        
-        for ( MethodDoc methodDoc : methods ) {
-            if ( Layouter.isDocumented(methodDoc)) {
-                count++;
-            }
-        }
-        
-        return count;
+    private String toSingleLine(String string) {
+        return string.replace(LF, WS);
     }
     
     private String createAnchor(String title, String anchor) {
@@ -158,11 +153,18 @@ public class Layouter {
     public void printClassList(List<ClassDoc> classes) {
         String layoutedText = this.formatter.horizontalRule();
         layoutedText += this.formatter.heading(HEADING_CLASSES, Formatter.HEADING_ONE);
-        layoutedText += this.formatter.tableHeader(HEADING_CLASS, HEADING_DESCRIPTION);
+        
+        if ( classes.size() > 0 ) {
+            layoutedText += this.formatter.tableHeader(HEADING_CLASS, HEADING_DESCRIPTION);
+        }
         
         for ( ClassDoc classDoc : classes ) {
             String classLink = this.createLinkIfAnchorExists(classDoc.name(), classDoc.qualifiedName());
             layoutedText += this.formatter.tableRow(classLink, this.createTagDescription(classDoc.inlineTags()));
+        }
+        
+        if ( classes.size() == 0 ) {
+            layoutedText += this.formatter.paragraph(EMPTY_BODY);
         }
         
         this.print(layoutedText);
@@ -170,7 +172,17 @@ public class Layouter {
     
     public void printClassDescription(ClassDoc classDoc) {
         String layoutedText = this.formatter.horizontalRule();
-        String classTitle = HEADING_CLASS + WS + classDoc.name();
+        String descriptor = "";
+        
+        if ( DocHelper.isEnum(classDoc) ) {
+            descriptor = HEADING_ENUM;
+        } else if ( classDoc.isInterface() ) {
+            descriptor = HEADING_INTERFACE;
+        } else {
+            descriptor = HEADING_CLASS;
+        }
+        
+        String classTitle = descriptor + WS + classDoc.name();
         
         String anchor = this.createAnchor(classTitle, classDoc.qualifiedName());
         layoutedText += this.formatter.heading(anchor, Formatter.HEADING_ONE);
@@ -290,46 +302,81 @@ public class Layouter {
         return layoutedText;
     }
     
-    public void printMethodList(List<MethodDoc> methods, List<String> forbiddenAnnotations) {
+    public void printMethodList(List<MethodDoc> methods, List<String> annotationsToRemove) {
         String layoutedText = this.formatter.heading(HEADING_METHOD_SUMMARY, Formatter.HEADING_TWO);
         
-        int documentedMethodCount = Layouter.countDocumentedMethods(methods);
+        int documentedMethodCount = DocHelper.countDocumentedMethods(methods);
         
         if ( documentedMethodCount > 0 ) {
             layoutedText += this.formatter.tableHeader(HEADING_METHOD, HEADING_DESCRIPTION);
+        } else {
+            layoutedText += this.formatter.paragraph(EMPTY_BODY);
         }
         
         for ( MethodDoc methodDoc : methods ) {
-            if ( !Layouter.isDocumented(methodDoc) ) {
+            if ( !DocHelper.isDocumented(methodDoc) ) {
                 continue;
             }
             
+            boolean indent = false;
+            boolean createLinks = false;
             String rawLink = Layouter.generateSnakeCaseFullMethodSignature(methodDoc);
-            String fullMethodSignature = this.generateFullMethodSignatureWithParameterNames(methodDoc, forbiddenAnnotations, false);
+            String fullMethodSignature = this.generateFullMethodSignatureWithParameterNames(methodDoc, annotationsToRemove, indent, createLinks);
             String formattedMethodLink = this.createLinkIfAnchorExists(fullMethodSignature, rawLink);
             layoutedText += this.formatter.tableRow(formattedMethodLink, this.createTagDescription(methodDoc.inlineTags()));
         }
         
         layoutedText += this.formatter.heading(HEADING_METHOD_DETAIL, Formatter.HEADING_TWO);
         
+        if ( documentedMethodCount == 0 ) {
+            layoutedText += this.formatter.paragraph(EMPTY_BODY);
+        }
+        
         this.print(layoutedText);
     }
     
-    public void printMethodInfo(MethodDoc methodDoc, List<String> forbiddenAnnotations) {
-        if ( !Layouter.isDocumented(methodDoc) ) {
+    public void printFieldList(List<FieldDoc> fields, List<String> annotationsToRemove) {
+        String layoutedText = this.formatter.heading(HEADING_FIELD_SUMMARY, Formatter.HEADING_TWO);
+        
+        int documentedFieldCount = DocHelper.countDocumentedFields(fields);
+        
+        if ( documentedFieldCount > 0 ) {
+            layoutedText += this.formatter.tableHeader(HEADING_FIELD, HEADING_DESCRIPTION);
+        } else {
+            layoutedText += this.formatter.paragraph(EMPTY_BODY);
+        }
+        
+        for ( FieldDoc fieldDoc : fields ) {
+            if ( !DocHelper.isDocumented(fieldDoc) ) {
+                continue;
+            }
+            
+            String rawLink = fieldDoc.qualifiedName();
+            String formattedFieldLink = this.createLinkIfAnchorExists(fieldDoc.name(), rawLink);
+            String fieldDescription = this.toSingleLine(this.createTagDescription(fieldDoc.inlineTags()));
+            layoutedText += this.formatter.tableRow(formattedFieldLink, fieldDescription);
+        }
+        
+        this.print(layoutedText);
+    }
+    
+    public void printMethodInfo(MethodDoc methodDoc, List<String> annotationsToRemove) {
+        if ( !DocHelper.isDocumented(methodDoc) ) {
             return;
         }
         
-        String layoutedText = this.createMethodDescription(methodDoc, forbiddenAnnotations);
-        layoutedText += this.createParameterList(methodDoc, forbiddenAnnotations);
+        String layoutedText = this.createMethodDescription(methodDoc, annotationsToRemove);
+        layoutedText += this.createParameterList(methodDoc, annotationsToRemove);
         layoutedText += this.createReturnInfo(methodDoc);
         layoutedText += this.createMethodIncludes(methodDoc);
         this.print(layoutedText);
     }
     
-    private String createMethodDescription(MethodDoc methodDoc, List<String> forbiddenAnnotations) {
+    private String createMethodDescription(MethodDoc methodDoc, List<String> annotationsToRemove) {
+        boolean indent = true;
+        boolean createLinks = false;
         String snakeCaseFullMethodSignature = Layouter.generateSnakeCaseFullMethodSignature(methodDoc);
-        String fullMethodSignature = this.generateFullMethodSignatureWithParameterNames(methodDoc, forbiddenAnnotations, true);
+        String fullMethodSignature = this.generateFullMethodSignatureWithParameterNames(methodDoc, annotationsToRemove, indent, createLinks);
         String formattedMethodAnchor = this.createAnchor(methodDoc.name(), snakeCaseFullMethodSignature);
         String layoutedText = this.formatter.heading(formattedMethodAnchor, Formatter.HEADING_TWO);
         layoutedText += this.formatter.codeBlock(fullMethodSignature);
@@ -337,7 +384,7 @@ public class Layouter {
         return layoutedText;
     }
     
-    private String createParameterList(MethodDoc methodDoc, List<String> forbiddenAnnotations) {
+    private String createParameterList(MethodDoc methodDoc, List<String> annotationsToRemove) {
         String layoutedText = "";
         
         if ( methodDoc.parameters().length > 0 && methodDoc.paramTags().length > 0 ) {
@@ -348,7 +395,7 @@ public class Layouter {
         for ( int i = 0; i < methodDoc.parameters().length && i < methodDoc.paramTags().length; i++ ) {
             Parameter parameter = methodDoc.parameters()[i];
             ParamTag paramTag = methodDoc.paramTags()[i];
-            String name = this.generateParameterName(parameter, forbiddenAnnotations);
+            String name = this.generateParameterName(parameter, annotationsToRemove, true);
             String description = this.createTagDescription(paramTag.inlineTags());
             description.replace(LF, WS);
             layoutedText += this.formatter.tableRow(name, description);
@@ -365,15 +412,32 @@ public class Layouter {
                 SeeTag linkTag = (SeeTag) inlineTag;
                 ClassDoc classDoc = linkTag.referencedClass();
                 MemberDoc memberDoc = linkTag.referencedMember();
+                String label = linkTag.label();
                 
-                if ( classDoc != null ) {
+                if ( memberDoc != null ) {
+                    if ( label == null || label.isEmpty() ) {
+                        label = memberDoc.containingClass().name() + DOT + memberDoc.name();
+                    }
+                    
+                    if ( memberDoc.isMethod() ) {
+                        label += BROPEN + BRCLOSE;
+                        String anchor = Layouter.generateSnakeCaseFullMethodSignature((MethodDoc) memberDoc);
+                        description += this.createLinkIfAnchorExists(label, anchor);
+                    } else if ( memberDoc.isField() ) {
+                        String anchor = memberDoc.qualifiedName();
+                        description += this.createLinkIfAnchorExists(label, anchor);
+                    } else {
+                        description += linkTag.label();
+                    }
+                } else if ( classDoc != null ) {
+                    if ( label == null || label.isEmpty() ) {
+                        label = classDoc.name();
+                    }
+                    
                     String anchor = classDoc.qualifiedName();
-                    description += this.createLinkIfAnchorExists(linkTag.label(), anchor);
-                } else if ( memberDoc != null && memberDoc.isMethod() ) {
-                    String anchor = Layouter.generateSnakeCaseFullMethodSignature((MethodDoc) memberDoc);
-                    description += this.createLinkIfAnchorExists(linkTag.label(), anchor);
+                    description += this.createLinkIfAnchorExists(label, anchor);
                 } else {
-                    description += linkTag.label();
+                    description += label;
                 }
             } else {
                 description += inlineTag.text();
@@ -412,7 +476,7 @@ public class Layouter {
         return this.includeFile(includeFile);
     }
     
-    private String generateFullMethodSignatureWithParameterNames(MethodDoc methodDoc, List<String> forbiddenAnnotations, boolean indent) {
+    private String generateFullMethodSignatureWithParameterNames(MethodDoc methodDoc, List<String> annotationsToRemove, boolean indent, boolean generateLinks) {
         boolean first = true;
         String result = methodDoc.modifiers() + WS + methodDoc.returnType() + WS + methodDoc.name() + BROPEN;
         int indentSize = result.length();
@@ -435,7 +499,7 @@ public class Layouter {
                 }
             }
             
-            result += this.generateParameterName(parameter, forbiddenAnnotations);
+            result += this.generateParameterName(parameter, annotationsToRemove, generateLinks);
         }
         
         result += BRCLOSE;
@@ -443,25 +507,30 @@ public class Layouter {
         return result;
     }
     
-    private String generateParameterName(Parameter parameter, List<String> forbiddenAnnotations) {
+    private String generateParameterName(Parameter parameter, List<String> annotationsToRemove, boolean generateLinks) {
         String result = "";
         
         for ( AnnotationDesc annotation : parameter.annotations() ) {
-            boolean forbidden = false;
+            boolean remove = false;
             
-            for ( String forbiddenAnnotation : forbiddenAnnotations ) {
-                if ( annotation.annotationType().name().equals(forbiddenAnnotation) ) {
-                    forbidden = true;
+            for ( String annotationToRemove : annotationsToRemove ) {
+                if ( annotation.annotationType().name().equals(annotationToRemove) ) {
+                    remove = true;
                     break;
                 }
             }
             
-            if ( !forbidden ) {
+            if ( !remove ) {
                 result += AT + annotation.annotationType().name() + WS;
             }
         }
         
-        result += this.createLinkIfAnchorExists(parameter.type().typeName(), parameter.type().qualifiedTypeName());
+        if ( generateLinks ) {
+            result += this.createLinkIfAnchorExists(parameter.type().typeName(), parameter.type().qualifiedTypeName());
+        } else {
+            result += parameter.type().typeName();
+        }
+        
         result += WS + parameter.name();
         return result;
     }

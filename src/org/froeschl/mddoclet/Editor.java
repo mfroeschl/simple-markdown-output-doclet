@@ -9,9 +9,10 @@ import org.froeschl.mddoclet.formatter.Formatter;
 import org.froeschl.mddoclet.printer.Printer;
 
 import com.sun.javadoc.ClassDoc;
+import com.sun.javadoc.FieldDoc;
 import com.sun.javadoc.MethodDoc;
+import com.sun.javadoc.ProgramElementDoc;
 import com.sun.javadoc.RootDoc;
-import com.sun.javadoc.Tag;
 
 /** 
  * Parses all classes, methods etc. and decides which elements to print to the document.
@@ -19,10 +20,8 @@ import com.sun.javadoc.Tag;
  * @author Marcus Froeschl
  */
 public class Editor {
-    private static final String HIDDEN_TAG = "@hidden";
-    
     final private Layouter layouter;
-    List<String> forbiddenAnnotations = new ArrayList<String>();
+    final private Options options;
     
     public Editor(Options options, Formatter formatter, Printer printer) {
         if ( options == null || formatter == null || printer == null ) {
@@ -30,12 +29,16 @@ public class Editor {
         }
         
         this.layouter = new Layouter(options, formatter, printer);
-        // TODO: Create a setting
-        this.forbiddenAnnotations.add("Nullable");
+        this.options = options;
     }
     
     public void authorDocument(RootDoc root) {
         ClassDoc[] classes = root.classes();
+        System.out.println("\n\nSimple Markdown Output Doclet");
+        System.out.println("=============================");
+        System.out.println("");
+        System.out.println(this.options.toString());
+        System.out.println("");
         
         this.layouter.setMode(Mode.PREPARE);
         this.layouter.printDocumentTitleAndHeader();
@@ -48,28 +51,86 @@ public class Editor {
         this.createAllClasses(classes);
     }
     
+    private boolean meetsMinimumVisbility(ProgramElementDoc element) {
+        boolean meetsCondition = true;
+        
+        switch ( options.getMinimumVisibility() ) {
+            case PRIVATE: 
+                meetsCondition = true;
+                break;
+            case PROTECTED:
+                meetsCondition = !element.isPrivate();
+                break;
+            case PACKAGE:
+                meetsCondition = (!element.isProtected() && !element.isPrivate());
+                break;
+            case PUBLIC:
+                meetsCondition = (!element.isProtected() && !element.isPrivate() && !element.isPackagePrivate());
+                break;
+            default:
+                meetsCondition = false;
+                break;
+        }
+        
+        if ( !meetsCondition ) {
+            System.out.println("Element " + element.name() + " is filrered because it does not meet minimum visibility requirement.");
+        }
+        
+        return meetsCondition;
+    }
+    
+    private boolean isPermittedClassType(ClassDoc classDoc) {
+        if ( options.getNoEnums() ) {
+            if ( DocHelper.isEnum(classDoc) ) {
+                System.out.println("Class " + classDoc.name() + " was filtered because it is an enum.");
+                return false;
+            }
+        }
+        
+        if ( options.getNoInterfaces() ) {
+            if ( classDoc.isInterface() ) {
+                System.out.println("Class " + classDoc.name() + " was filtered because it is an interface.");
+                return false;
+            }
+        }
+        
+        if ( options.getNoNestedClasses() ) {
+            if ( classDoc.containingClass() != null ) {
+                System.out.println("Class " + classDoc.name() + " was filtered because it is a nested class.");
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    private boolean shouldBeHidden(ProgramElementDoc element) {
+        if ( this.options.getIncludeHidden() ) {
+            return false;
+        }
+        
+        boolean isHidden = DocHelper.isHidden(element);
+        if ( isHidden ) {
+            System.out.println("Element " + element.name() + " was filtered because it contains the @hidden tag.");
+            return true;
+        }
+        
+        return false;
+    }
+    
     private List<ClassDoc> filterClasses(ClassDoc[] classes) {
         List<ClassDoc> filteredClasses = new ArrayList<ClassDoc>();
         
-        // TODO: Create a setting
-        for (int i = 0; i < classes.length; ++i) {
-            if (    !classes[i].isPublic() || 
-                    !classes[i].isOrdinaryClass() ||
-                    classes[i].containingClass() != null
-                    ) {
+        for ( int i = 0; i < classes.length; ++i ) {
+            if ( ! this.meetsMinimumVisbility(classes[i]) ) {
                 continue;
             }
             
-            boolean hiddenTag = false;
-            
-            for ( Tag tag : classes[i].tags() ) {
-                if ( tag.name().equals(HIDDEN_TAG) ) {
-                    hiddenTag = true;
-                    break;
-                }
+            if ( !this.isPermittedClassType(classes[i]) ) {
+                continue;
             }
             
-            if ( hiddenTag ) {
+            if ( this.shouldBeHidden(classes[i]) ) {
                 continue;
             }
             
@@ -82,22 +143,12 @@ public class Editor {
     private List<MethodDoc> filterMethods(MethodDoc[] methods) {
         List<MethodDoc> filteredMethods = new ArrayList<MethodDoc>();
         
-        // TODO: Create a setting
-        for (int i = 0; i < methods.length; ++i) {
-            if ( !methods[i].isPublic() ) {
+        for ( int i = 0; i < methods.length; ++i ) {
+            if ( !this.meetsMinimumVisbility(methods[i]) ) {
                 continue;
             }
             
-            boolean hiddenTag = false;
-            
-            for ( Tag tag : methods[i].tags() ) {
-                if ( tag.name().equals(HIDDEN_TAG) ) {
-                    hiddenTag = true;
-                    break;
-                }
-            }
-            
-            if ( hiddenTag ) {
+            if ( this.shouldBeHidden(methods[i]) ) {
                 continue;
             }
             
@@ -105,6 +156,24 @@ public class Editor {
         }
         
         return filteredMethods;
+    }
+    
+    private List<FieldDoc> filterFields(FieldDoc[] fields) {
+        List<FieldDoc> filteredFields = new ArrayList<FieldDoc>();
+        
+        for ( int i = 0; i < fields.length; ++i ) {
+            if ( !this.meetsMinimumVisbility(fields[i]) ) {
+                continue;
+            }
+            
+            if ( this.shouldBeHidden(fields[i]) ) {
+                continue;
+            }
+            
+            filteredFields.add(fields[i]);
+        }
+        
+        return filteredFields;
     }
     
     private void createClassList(ClassDoc[] classes) {
@@ -116,6 +185,7 @@ public class Editor {
         
         for ( ClassDoc classDoc : filteredClasses ) {
             this.createClassDescription(classDoc);
+            this.createFieldList(classDoc.fields());
             this.createMethodList(classDoc.methods());
             this.createAllMethods(classDoc.methods());
             this.layouter.printClassIncludes(classDoc);
@@ -126,15 +196,19 @@ public class Editor {
         this.layouter.printClassDescription(classDoc);
     }
     
+    private void createFieldList(FieldDoc[] fields) {
+        this.layouter.printFieldList(this.filterFields(fields), this.options.getAnnotationsToBeRemoved());
+    }
+    
     private void createMethodList(MethodDoc[] methods) {
-        this.layouter.printMethodList(this.filterMethods(methods), this.forbiddenAnnotations);
+        this.layouter.printMethodList(this.filterMethods(methods), this.options.getAnnotationsToBeRemoved());
     }
     
     private void createAllMethods(MethodDoc[] methods) {
         List<MethodDoc> filteredMethods = this.filterMethods(methods);
         
         for ( MethodDoc methodDoc : filteredMethods ) {
-            this.layouter.printMethodInfo(methodDoc, this.forbiddenAnnotations);
+            this.layouter.printMethodInfo(methodDoc, this.options.getAnnotationsToBeRemoved());
         }
     }
 }
