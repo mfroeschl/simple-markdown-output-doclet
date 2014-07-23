@@ -43,6 +43,7 @@ public class Options {
     public static final String KEY_OUTPUT_FILE = "-outputfile";
     public static final String KEY_OUTPUT_DIR = "-outputdir";
     public static final String KEY_INCLUDE_DIR = "-includedir";
+    public static final String KEY_LAYOUT_DIR = "-layoutdir";
     public static final String KEY_DOCUMENT_TITLE = "-doctitle";
     public static final String KEY_DOCUMENT_HEADER = "-header";
     public static final String KEY_MINIMUM_VISIBILITY = "-visibility";
@@ -58,6 +59,7 @@ public class Options {
     private static final String DEFAULT_OUTPUT_FILE = "output.md";
     private static final String DEFAULT_OUTPUT_DIR = ".";
     private static final String DEFAULT_INCLUDE_DIR = "./include";
+    private static final String DEFAULT_LAYOUT_DIR = "./layouts/markdown";
     private static final String DEFAULT_DOCUMENT_TITLE = "Documentation";
     private static final String DEFAULT_DOCUMENT_HEADER = "";
     private static final Visibility DEFAULT_MINIMUM_VISIBILITY = Visibility.PUBLIC;
@@ -74,6 +76,7 @@ public class Options {
         Options.optionToOptionLength.put(KEY_OUTPUT_FILE, 2);
         Options.optionToOptionLength.put(KEY_OUTPUT_DIR, 2);
         Options.optionToOptionLength.put(KEY_INCLUDE_DIR, 2);
+        Options.optionToOptionLength.put(KEY_LAYOUT_DIR, 2);
         Options.optionToOptionLength.put(KEY_DOCUMENT_TITLE, 2);
         Options.optionToOptionLength.put(KEY_DOCUMENT_HEADER, 2);
         Options.optionToOptionLength.put(KEY_MINIMUM_VISIBILITY, 2);
@@ -87,6 +90,7 @@ public class Options {
     private String outputFile = DEFAULT_OUTPUT_FILE;
     private String outputDir = DEFAULT_OUTPUT_DIR;
     private String includeDir = DEFAULT_INCLUDE_DIR;
+    private String layoutDir = DEFAULT_LAYOUT_DIR;
     private String documentTitle = DEFAULT_DOCUMENT_TITLE;
     private String documentHeader = DEFAULT_DOCUMENT_HEADER;
     private Visibility minimumVisibility = DEFAULT_MINIMUM_VISIBILITY;
@@ -126,6 +130,8 @@ public class Options {
                 this.outputDir = option[1];
             } else if ( option[0].equals(KEY_INCLUDE_DIR) ) {
                 this.includeDir = option[1];
+            } else if ( option[0].equals(KEY_LAYOUT_DIR) ) {
+                this.layoutDir = option[1];
             } else if ( option[0].equals(KEY_DOCUMENT_TITLE) ) {
                 this.documentTitle = option[1];
             } else if ( option[0].equals(KEY_DOCUMENT_HEADER) ) {
@@ -168,6 +174,10 @@ public class Options {
     
     public String getIncludeDir() {
         return this.includeDir;
+    }
+    
+    public String getLayoutDir() {
+        return this.layoutDir;
     }
     
     public String getDocumentTitle() {

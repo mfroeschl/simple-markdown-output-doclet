@@ -1,0 +1,26 @@
+
+---  
+
+## %CLASS_TITLE% ##  
+
+```
+%CLASS_SIGNATURE%
+```
+
+**Hierarchy:**  
+
+```
+%CLASS_HIERARCHY%
+```
+
+**Description:**  
+%CLASS_LONG_DESCRIPTION%
+
+**Author:**  
+%TAG_AUTHOR%
+
+**Version:**  
+%TAG_VERSION%
+
+**Since:**  
+%TAG_SINCE%

@@ -40,7 +40,23 @@ public class Layouter {
     private static final String BRCLOSE = ")";
     private static final String INDENT = "    ";
     
-    private static final String HEADING_CLASSES = "Classes";
+    private static final String LAYOUT_CLASS_LIST = "ClassList.layout";
+    private static final String LAYOUT_CLASS_LIST_ITEMS_HEADER = "ClassListItemsHeader.layout";
+    private static final String LAYOUT_CLASS_LIST_ITEM = "ClassListItem.layout";
+    private static final String LAYOUT_CLASS_DESCRIPTION = "ClassDescription.layout";
+    
+    private static final String VAR_CLASS_LIST_ITEMS = "%CLASS_LIST_ITEMS%";
+    private static final String VAR_CLASS_LIST_ITEMS_HEADER = "%CLASS_LIST_ITEMS_HEADER%";
+    private static final String VAR_CLASS_LINK = "%CLASS_LINK%";
+    private static final String VAR_CLASS_SHORT_DESCRIPTION = "%CLASS_SHORT_DESCRIPTION%";
+    private static final String VAR_CLASS_LONG_DESCRIPTION = "%CLASS_LONG_DESCRIPTION%";
+    private static final String VAR_CLASS_TITLE = "%CLASS_TITLE%";
+    private static final String VAR_CLASS_SIGNATURE = "%CLASS_SIGNATURE%";
+    private static final String VAR_CLASS_HIERARCHY = "%CLASS_HIERARCHY%";
+    private static final String VAR_AUTHOR = "%TAG_AUTHOR%";
+    private static final String VAR_VERSION = "%TAG_VERSION%";
+    private static final String VAR_SINCE = "%TAG_SINCE%";
+    
     private static final String HEADING_CLASS = "Class";
     private static final String HEADING_ENUM = "Enum";
     private static final String HEADING_INTERFACE = "Interface";
@@ -54,23 +70,26 @@ public class Layouter {
     private static final String HEADING_RETURNS = "Returns";
     private static final String HEADING_RETURN_TYPE = "Return Type";
     private static final String HEADING_DESCRIPTION = "Description";
-    private static final String HEADING_HIERARCHY = "Hierarchy:";
     private static final String EMPTY_BODY = "-";
     private static final String LAST_UPDATED = "Last updated";
     private static final String EXTENDS = "extends";
     private static final String IMPLEMENTS = "implements";
     private static final String ENUM = "enum";
     private static final String CLASS = "class";
-    private static final String LINK_TAG = "@link";
-    private static final String RETURN_TAG = "@return";
-    private static final String INCLUDE_TAG = "@include";
+    
+    private static final String TAG_LINK = "@link";
+    private static final String TAG_RETURN = "@return";
+    private static final String TAG_INCLUDE = "@include";
+    private static final String TAG_AUTHOR = "@author";
+    private static final String TAG_VERSION = "@version";
+    private static final String TAG_SINCE = "@since";
     
     final private Options options;
     final private Formatter formatter;
     final private Printer printer;
     private Mode mode = Mode.PREPARE;
-    private Map<String, String> tagToName = new HashMap<String, String>();
     private Map<String, String> anchors = new HashMap<String, String>();
+    private Map<String, String> tagToVar = new HashMap<String, String>();
     
     public Layouter(Options options, Formatter formatter, Printer printer) {
         if ( formatter == null || printer == null ) {
@@ -81,9 +100,9 @@ public class Layouter {
         this.formatter = formatter;
         this.printer = printer;
         this.mode = Mode.PREPARE;
-        this.tagToName.put("@author", "Author:");
-        this.tagToName.put("@version", "Version:");
-        this.tagToName.put("@since", "Since:");
+        this.tagToVar.put(TAG_AUTHOR, VAR_AUTHOR);
+        this.tagToVar.put(TAG_VERSION, VAR_VERSION);
+        this.tagToVar.put(TAG_SINCE, VAR_SINCE);
     }
     
     public void setMode(Mode mode) {
@@ -100,8 +119,19 @@ public class Layouter {
         }
     }
     
-    private String toSingleLine(String string) {
+    private static String toSingleLine(String string) {
         return string.replace(LF, WS);
+    }
+    
+    private static String onlyFirstLine(String string) {
+        String result = string;
+        
+        int position = string.indexOf(LF);
+        if ( position >= 0 ) {
+            result = string.substring(0, position);
+        }
+        
+        return result;
     }
     
     private String createAnchor(String title, String anchor) {
@@ -137,6 +167,22 @@ public class Layouter {
         return "";
     }
     
+    private String loadLayoutFile(String layoutFile) {
+        if ( layoutFile != null && layoutFile.length() > 0 ) {
+            String fullPath = FileUtils.appendToPath(this.options.getLayoutDir(), layoutFile);
+            String data = "";
+            try {
+                data = FileUtils.readFileIntoString(fullPath);
+            } catch ( IOException e ) {
+                e.printStackTrace();
+            }
+            
+            return data;
+        }
+        
+        return "";
+    }
+    
     public void printDocumentTitleAndHeader() {
         Date date = new Date();
         SimpleDateFormat dateFormatter = new SimpleDateFormat();
@@ -150,27 +196,90 @@ public class Layouter {
     }
     
     public void printClassList(List<ClassDoc> classes) {
-        String layoutedText = this.formatter.horizontalRule();
-        layoutedText += this.formatter.heading(HEADING_CLASSES, Formatter.HEADING_ONE);
+        String layout = this.loadLayoutFile(LAYOUT_CLASS_LIST);
         
         if ( classes.size() > 0 ) {
-            layoutedText += this.formatter.tableHeader(HEADING_CLASS, HEADING_DESCRIPTION);
+            String classListItemsHeader = this.loadLayoutFile(LAYOUT_CLASS_LIST_ITEMS_HEADER);
+            layout = layout.replace(VAR_CLASS_LIST_ITEMS_HEADER, classListItemsHeader);
+        } else {
+            layout = layout.replace(VAR_CLASS_LIST_ITEMS_HEADER, "");
         }
         
-        for ( ClassDoc classDoc : classes ) {
-            String classLink = this.createLinkIfAnchorExists(classDoc.name(), classDoc.qualifiedName());
-            layoutedText += this.formatter.tableRow(classLink, this.createTagDescription(classDoc.inlineTags()));
+        if ( layout.contains(VAR_CLASS_LIST_ITEMS) ) {
+            layout = layout.replace(VAR_CLASS_LIST_ITEMS, this.createClassListItems(classes));
         }
         
-        if ( classes.size() == 0 ) {
-            layoutedText += this.formatter.paragraph(EMPTY_BODY);
-        }
-        
-        this.print(layoutedText);
+        this.print(layout);
     }
     
+    private String createClassListItems(List<ClassDoc> classes) {
+        String itemLayout = this.loadLayoutFile(LAYOUT_CLASS_LIST_ITEM);
+        String classListItems = "";
+        
+        for ( ClassDoc classDoc : classes ) {
+            String item = itemLayout;
+            if ( item.contains(VAR_CLASS_LINK) ) {
+                item = item.replace(VAR_CLASS_LINK, this.createLinkIfAnchorExists(classDoc.name(), classDoc.qualifiedName()));
+            }
+            
+            if ( item.contains(VAR_CLASS_SHORT_DESCRIPTION) ) {
+                item = item.replace(VAR_CLASS_SHORT_DESCRIPTION,  this.createTagDescription(classDoc.inlineTags(), true));
+            }
+            
+            if ( item.contains(VAR_CLASS_LONG_DESCRIPTION) ) {
+                item = item.replace(VAR_CLASS_LONG_DESCRIPTION, this.createTagDescription(classDoc.inlineTags(), false));
+            }
+            
+            classListItems += item;
+        }
+        
+        return classListItems;
+    }
+    
+    
     public void printClassDescription(ClassDoc classDoc) {
-        String layoutedText = this.formatter.horizontalRule();
+        String layout = this.loadLayoutFile(LAYOUT_CLASS_DESCRIPTION);
+        
+        if ( layout.contains(VAR_CLASS_TITLE) ) {
+            layout = layout.replace(VAR_CLASS_TITLE, this.createClassTitle(classDoc));
+        }
+        
+        if ( layout.contains(VAR_CLASS_SIGNATURE) ) {
+            layout = layout.replace(VAR_CLASS_SIGNATURE, this.createClassSignature(classDoc));
+        }
+        
+        if ( layout.contains(VAR_CLASS_HIERARCHY) ) {
+            layout = layout.replace(VAR_CLASS_HIERARCHY, this.createClassHierarchy(classDoc));
+        }
+        
+        if ( layout.contains(VAR_CLASS_SHORT_DESCRIPTION) ) {
+            layout = layout.replace(VAR_CLASS_SHORT_DESCRIPTION, this.createTagDescription(classDoc.inlineTags(), true));
+        }
+        
+        if ( layout.contains(VAR_CLASS_LONG_DESCRIPTION) ) {
+            layout = layout.replace(VAR_CLASS_LONG_DESCRIPTION, this.createTagDescription(classDoc.inlineTags(), false));
+        }
+        
+        for ( Tag tag : classDoc.tags() ) {
+            String tagVar = this.tagToVar.get(tag.name());
+            
+            if ( tagVar == null ) {
+                continue;
+            }
+            
+            if ( layout.contains(tagVar) ) {
+                layout = layout.replace(tagVar, tag.text());
+            }
+        }
+        
+        for ( String tagVar : this.tagToVar.values() ) {
+            layout = layout.replace(tagVar, "");
+        }
+        
+        this.print(layout);
+    }
+    
+    private String createClassTitle(ClassDoc classDoc) {
         String descriptor = "";
         
         if ( DocHelper.isEnum(classDoc) ) {
@@ -182,54 +291,22 @@ public class Layouter {
         }
         
         String classTitle = descriptor + WS + classDoc.name();
-        
         String anchor = this.createAnchor(classTitle, classDoc.qualifiedName());
-        layoutedText += this.formatter.heading(anchor, Formatter.HEADING_ONE);
-        layoutedText += createClassSignature(classDoc);
-        layoutedText += createClassHierarchy(classDoc);
         
-        String classDescription = this.formatter.bold(HEADING_DESCRIPTION + ":") + this.formatter.lineFeed();
-        classDescription += this.createTagDescription(classDoc.inlineTags());
-        layoutedText += this.formatter.paragraph(classDescription);
-        
-        layoutedText += createClassTags(classDoc);
-        
-        this.print(layoutedText);
+        return anchor;
     }
     
     public void printClassIncludes(ClassDoc classDoc) {
         String includeFile = "";
         
         for ( Tag tag : classDoc.tags() ) {
-            if ( tag.name().equals(INCLUDE_TAG) ) {
+            if ( tag.name().equals(TAG_INCLUDE) ) {
                 includeFile = tag.text();
                 break;
             }
         }
         
         this.print(this.includeFile(includeFile));
-    }
-    
-    private String createClassTags(ClassDoc classDoc) {
-        String layoutedText = "";
-        
-        for ( Tag tag : classDoc.tags() ) {
-            String tagName = this.tagToName.get(tag.name());
-            
-            if ( tagName == null || tagName.isEmpty() ) {
-                tagName = tag.name();
-            }
-            
-            if ( tagName.equals(INCLUDE_TAG) ) {
-                continue;
-            }
-            
-            String tagDescription = this.formatter.bold(tagName) + this.formatter.lineFeed();
-            tagDescription += tag.text();
-            layoutedText += this.formatter.paragraph(tagDescription);
-        }
-        
-        return layoutedText;
     }
     
     private String createClassSignature(ClassDoc classDoc) {
@@ -261,7 +338,7 @@ public class Layouter {
             signature += interfaceDoc.name();
         }
         
-        return this.formatter.codeBlock(signature);
+        return signature;
     }
     
     private String createClassHierarchy(ClassDoc classDoc) {
@@ -296,9 +373,7 @@ public class Layouter {
             indentCount++;
         }
         
-        String layoutedText = this.formatter.bold(HEADING_HIERARCHY) + this.formatter.lineFeed();
-        layoutedText += this.formatter.codeBlock(hierarchy);
-        return layoutedText;
+        return hierarchy;
     }
     
     public void printMethodList(List<MethodDoc> methods, List<String> annotationsToRemove) {
@@ -322,7 +397,7 @@ public class Layouter {
             String rawLink = Layouter.generateSnakeCaseFullMethodSignature(methodDoc);
             String fullMethodSignature = this.generateFullMethodSignatureWithParameterNames(methodDoc, annotationsToRemove, indent, createLinks);
             String formattedMethodLink = this.createLinkIfAnchorExists(fullMethodSignature, rawLink);
-            layoutedText += this.formatter.tableRow(formattedMethodLink, this.createTagDescription(methodDoc.inlineTags()));
+            layoutedText += this.formatter.tableRow(formattedMethodLink, this.createTagDescription(methodDoc.inlineTags(), true));
         }
         
         layoutedText += this.formatter.heading(HEADING_METHOD_DETAIL, Formatter.HEADING_TWO);
@@ -352,7 +427,7 @@ public class Layouter {
             
             String rawLink = fieldDoc.qualifiedName();
             String formattedFieldLink = this.createLinkIfAnchorExists(fieldDoc.name(), rawLink);
-            String fieldDescription = this.toSingleLine(this.createTagDescription(fieldDoc.inlineTags()));
+            String fieldDescription = Layouter.toSingleLine(this.createTagDescription(fieldDoc.inlineTags(), true));
             layoutedText += this.formatter.tableRow(formattedFieldLink, fieldDescription);
         }
         
@@ -379,7 +454,7 @@ public class Layouter {
         String formattedMethodAnchor = this.createAnchor(methodDoc.name(), snakeCaseFullMethodSignature);
         String layoutedText = this.formatter.heading(formattedMethodAnchor, Formatter.HEADING_TWO);
         layoutedText += this.formatter.codeBlock(fullMethodSignature);
-        layoutedText += this.formatter.paragraph(this.createTagDescription(methodDoc.inlineTags()));
+        layoutedText += this.formatter.paragraph(this.createTagDescription(methodDoc.inlineTags(), false));
         return layoutedText;
     }
     
@@ -395,19 +470,19 @@ public class Layouter {
             Parameter parameter = methodDoc.parameters()[i];
             ParamTag paramTag = methodDoc.paramTags()[i];
             String name = this.generateParameterName(parameter, annotationsToRemove, true);
-            String description = this.createTagDescription(paramTag.inlineTags());
-            description.replace(LF, WS);
+            String description = this.createTagDescription(paramTag.inlineTags(), true);
+            description = Layouter.toSingleLine(description);
             layoutedText += this.formatter.tableRow(name, description);
         }
         
         return layoutedText;
     }
     
-    private String createTagDescription(Tag[] inlineTags) {
+    private String createTagDescription(Tag[] inlineTags, boolean shortDescription) {
         String description = "";
         
         for ( Tag inlineTag : inlineTags ) {
-            if ( inlineTag.name().equals(LINK_TAG) ) {
+            if ( inlineTag.name().equals(TAG_LINK) ) {
                 SeeTag linkTag = (SeeTag) inlineTag;
                 ClassDoc classDoc = linkTag.referencedClass();
                 MemberDoc memberDoc = linkTag.referencedMember();
@@ -443,6 +518,12 @@ public class Layouter {
             }
         }
         
+        if ( shortDescription ) {
+            description = Layouter.onlyFirstLine(description);
+        } else {
+            description = Layouter.toSingleLine(description);
+        }
+        
         return description;
     }
     
@@ -452,7 +533,7 @@ public class Layouter {
         String returnDescription = "";
         
         for ( Tag tag : methodDoc.tags() ) {
-            if ( tag.name().equals(RETURN_TAG) ) {
+            if ( tag.name().equals(TAG_RETURN) ) {
                 returnDescription = tag.text();
                 break;
             }
@@ -466,7 +547,7 @@ public class Layouter {
         String includeFile = "";
         
         for ( Tag tag : methodDoc.tags() ) {
-            if ( tag.name().equals(INCLUDE_TAG) ) {
+            if ( tag.name().equals(TAG_INCLUDE) ) {
                 includeFile = tag.text();
                 break;
             }
