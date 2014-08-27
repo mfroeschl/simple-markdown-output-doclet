@@ -52,6 +52,9 @@ public class Layouter {
     private static final String LAYOUT_PARAMETER_LIST = "ParameterList.layout";
     private static final String LAYOUT_PARAMETER_LIST_ITEMS_HEADER = "ParameterListItemsHeader.layout";
     private static final String LAYOUT_PARAMETER_LIST_ITEM = "ParameterListItem.layout";
+    private static final String LAYOUT_FIELD_LIST = "FieldList.layout";
+    private static final String LAYOUT_FIELD_LIST_ITEMS_HEADER = "FieldListItemsHeader.layout";
+    private static final String LAYOUT_FIELD_LIST_ITEM = "FieldListItem.layout";
     
     private static final String VAR_CLASS_LIST_ITEMS = "%CLASS_LIST_ITEMS%";
     private static final String VAR_CLASS_LIST_ITEMS_HEADER = "%CLASS_LIST_ITEMS_HEADER%";
@@ -75,6 +78,11 @@ public class Layouter {
     private static final String VAR_PARAMETER_TYPE_AND_NAME = "%PARAMETER_TYPE_AND_NAME%";
     private static final String VAR_PARAMETER_SHORT_DESCRIPTION = "%PARAMETER_SHORT_DESCRIPTION%";
     private static final String VAR_PARAMETER_LONG_DESCRIPTION = "%PARAMETER_LONG_DESCRIPTION%";
+    private static final String VAR_FIELD_LIST_ITEMS = "%FIELD_LIST_ITEMS%";
+    private static final String VAR_FIELD_LIST_ITEMS_HEADER = "%FIELD_LIST_ITEMS_HEADER%";
+    private static final String VAR_FIELD_NAME = "%FIELD_NAME%";
+    private static final String VAR_FIELD_SHORT_DESCRIPTION = "%FIELD_SHORT_DESCRIPTION%";
+    private static final String VAR_FIELD_LONG_DESCRIPTION = "%FIELD_LONG_DESCRIPTION%";
     private static final String VAR_TAG_AUTHOR = "%TAG_AUTHOR%";
     private static final String VAR_TAG_VERSION = "%TAG_VERSION%";
     private static final String VAR_TAG_SINCE = "%TAG_SINCE%";
@@ -82,9 +90,6 @@ public class Layouter {
     private static final String HEADING_CLASS = "Class";
     private static final String HEADING_ENUM = "Enum";
     private static final String HEADING_INTERFACE = "Interface";
-    private static final String HEADING_FIELD_SUMMARY = "Field Summary";
-    private static final String HEADING_FIELD = "Field";
-    private static final String HEADING_DESCRIPTION = "Description";
     private static final String EMPTY_BODY = "-";
     private static final String LAST_UPDATED = "Last updated";
     private static final String EXTENDS = "extends";
@@ -445,6 +450,7 @@ public class Layouter {
         return classListItems;
     }
     
+    /*
     public void printFieldList(List<FieldDoc> fields, List<String> annotationsToRemove) {
         String layoutedText = this.formatter.heading(HEADING_FIELD_SUMMARY, Formatter.HEADING_TWO);
         
@@ -468,6 +474,57 @@ public class Layouter {
         }
         
         this.print(layoutedText);
+    }
+    */
+    
+    public void printFieldList(List<FieldDoc> fields, List<String> annotationsToRemove) {
+        int documentedFieldCount = DocHelper.countDocumentedFields(fields);
+        String layout = this.loadLayoutFile(LAYOUT_FIELD_LIST);
+        
+        if ( layout.contains(VAR_FIELD_LIST_ITEMS_HEADER) ) {
+            if ( documentedFieldCount > 0 ) {
+                String fieldListItemsHeader = this.loadLayoutFile(LAYOUT_FIELD_LIST_ITEMS_HEADER);
+                layout = layout.replace(VAR_FIELD_LIST_ITEMS_HEADER, fieldListItemsHeader);
+            } else {
+                layout = layout.replace(VAR_FIELD_LIST_ITEMS_HEADER, "");
+            }
+        }
+        
+        if ( layout.contains(VAR_FIELD_LIST_ITEMS) ) {
+            layout = layout.replace(VAR_FIELD_LIST_ITEMS, this.createFieldListItems(fields, annotationsToRemove));
+        }
+        
+        this.print(layout);
+    }
+    
+    private String createFieldListItems(List<FieldDoc> fields, List<String> annotationsToRemove) {
+        String itemLayout = this.loadLayoutFile(LAYOUT_FIELD_LIST_ITEM);
+        String classListItems = "";
+        
+        for ( FieldDoc fieldDoc : fields ) {
+            if ( !DocHelper.isDocumented(fieldDoc) ) {
+                continue;
+            }
+            
+            String item = itemLayout;
+            if ( item.contains(VAR_FIELD_NAME) ) {
+                String rawLink = fieldDoc.qualifiedName();
+                String formattedFieldLink = this.createLinkIfAnchorExists(fieldDoc.name(), rawLink);
+                item = item.replace(VAR_FIELD_NAME, formattedFieldLink);
+            }
+            
+            if ( item.contains(VAR_FIELD_SHORT_DESCRIPTION) ) {
+                item = item.replace(VAR_FIELD_SHORT_DESCRIPTION,  Layouter.toSingleLine(this.createTagDescription(fieldDoc.inlineTags(), true)));
+            }
+            
+            if ( item.contains(VAR_FIELD_LONG_DESCRIPTION) ) {
+                item = item.replace(VAR_FIELD_LONG_DESCRIPTION, Layouter.toSingleLine(this.createTagDescription(fieldDoc.inlineTags(), false)));
+            }
+            
+            classListItems += item;
+        }
+        
+        return classListItems;
     }
     
     public void printMethodInfo(MethodDoc methodDoc, List<String> annotationsToRemove) {
