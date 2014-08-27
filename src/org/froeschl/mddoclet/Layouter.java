@@ -44,6 +44,9 @@ public class Layouter {
     private static final String LAYOUT_CLASS_LIST_ITEMS_HEADER = "ClassListItemsHeader.layout";
     private static final String LAYOUT_CLASS_LIST_ITEM = "ClassListItem.layout";
     private static final String LAYOUT_CLASS_DESCRIPTION = "ClassDescription.layout";
+    private static final String LAYOUT_METHOD_LIST = "MethodList.layout";
+    private static final String LAYOUT_METHOD_LIST_ITEMS_HEADER = "MethodListItemsHeader.layout";
+    private static final String LAYOUT_METHOD_LIST_ITEM = "MethodListItem.layout";
     
     private static final String VAR_CLASS_LIST_ITEMS = "%CLASS_LIST_ITEMS%";
     private static final String VAR_CLASS_LIST_ITEMS_HEADER = "%CLASS_LIST_ITEMS_HEADER%";
@@ -53,16 +56,18 @@ public class Layouter {
     private static final String VAR_CLASS_TITLE = "%CLASS_TITLE%";
     private static final String VAR_CLASS_SIGNATURE = "%CLASS_SIGNATURE%";
     private static final String VAR_CLASS_HIERARCHY = "%CLASS_HIERARCHY%";
-    private static final String VAR_AUTHOR = "%TAG_AUTHOR%";
-    private static final String VAR_VERSION = "%TAG_VERSION%";
-    private static final String VAR_SINCE = "%TAG_SINCE%";
+    private static final String VAR_METHOD_LIST_ITEMS = "%METHOD_LIST_ITEMS%";
+    private static final String VAR_METHOD_LIST_ITEMS_HEADER = "%METHOD_LIST_ITEMS_HEADER%";
+    private static final String VAR_METHOD_LINK = "%METHOD_LINK%";
+    private static final String VAR_METHOD_SHORT_DESCRIPTION = "%METHOD_SHORT_DESCRIPTION%";
+    private static final String VAR_METHOD_LONG_DESCRIPTION = "%METHOD_LONG_DESCRIPTION%";
+    private static final String VAR_TAG_AUTHOR = "%TAG_AUTHOR%";
+    private static final String VAR_TAG_VERSION = "%TAG_VERSION%";
+    private static final String VAR_TAG_SINCE = "%TAG_SINCE%";
     
     private static final String HEADING_CLASS = "Class";
     private static final String HEADING_ENUM = "Enum";
     private static final String HEADING_INTERFACE = "Interface";
-    private static final String HEADING_METHOD_SUMMARY = "Method Summary";
-    private static final String HEADING_METHOD_DETAIL = "Method Detail";
-    private static final String HEADING_METHOD = "Method";
     private static final String HEADING_PARAMETERS = "Parameters";
     private static final String HEADING_PARAMETER = "Parameter";
     private static final String HEADING_FIELD_SUMMARY = "Field Summary";
@@ -100,9 +105,9 @@ public class Layouter {
         this.formatter = formatter;
         this.printer = printer;
         this.mode = Mode.PREPARE;
-        this.tagToVar.put(TAG_AUTHOR, VAR_AUTHOR);
-        this.tagToVar.put(TAG_VERSION, VAR_VERSION);
-        this.tagToVar.put(TAG_SINCE, VAR_SINCE);
+        this.tagToVar.put(TAG_AUTHOR, VAR_TAG_AUTHOR);
+        this.tagToVar.put(TAG_VERSION, VAR_TAG_VERSION);
+        this.tagToVar.put(TAG_SINCE, VAR_TAG_SINCE);
     }
     
     public void setMode(Mode mode) {
@@ -235,7 +240,6 @@ public class Layouter {
         
         return classListItems;
     }
-    
     
     public void printClassDescription(ClassDoc classDoc) {
         String layout = this.loadLayoutFile(LAYOUT_CLASS_DESCRIPTION);
@@ -377,36 +381,54 @@ public class Layouter {
     }
     
     public void printMethodList(List<MethodDoc> methods, List<String> annotationsToRemove) {
-        String layoutedText = this.formatter.heading(HEADING_METHOD_SUMMARY, Formatter.HEADING_TWO);
-        
         int documentedMethodCount = DocHelper.countDocumentedMethods(methods);
+        String layout = this.loadLayoutFile(LAYOUT_METHOD_LIST);
         
         if ( documentedMethodCount > 0 ) {
-            layoutedText += this.formatter.tableHeader(HEADING_METHOD, HEADING_DESCRIPTION);
+            String methodListItemsHeader = this.loadLayoutFile(LAYOUT_METHOD_LIST_ITEMS_HEADER);
+            layout = layout.replace(VAR_METHOD_LIST_ITEMS_HEADER, methodListItemsHeader);
         } else {
-            layoutedText += this.formatter.paragraph(EMPTY_BODY);
+            layout = layout.replace(VAR_METHOD_LIST_ITEMS_HEADER, "");
         }
+        
+        if ( layout.contains(VAR_METHOD_LIST_ITEMS) ) {
+            layout = layout.replace(VAR_METHOD_LIST_ITEMS, this.createMethodListItems(methods, annotationsToRemove));
+        }
+        
+        this.print(layout);
+    }
+    
+    private String createMethodListItems(List<MethodDoc> methods, List<String> annotationsToRemove) {
+        String itemLayout = this.loadLayoutFile(LAYOUT_METHOD_LIST_ITEM);
+        String classListItems = "";
         
         for ( MethodDoc methodDoc : methods ) {
             if ( !DocHelper.isDocumented(methodDoc) ) {
                 continue;
             }
             
-            boolean indent = false;
-            boolean createLinks = false;
-            String rawLink = Layouter.generateSnakeCaseFullMethodSignature(methodDoc);
-            String fullMethodSignature = this.generateFullMethodSignatureWithParameterNames(methodDoc, annotationsToRemove, indent, createLinks);
-            String formattedMethodLink = this.createLinkIfAnchorExists(fullMethodSignature, rawLink);
-            layoutedText += this.formatter.tableRow(formattedMethodLink, this.createTagDescription(methodDoc.inlineTags(), true));
+            String item = itemLayout;
+            if ( item.contains(VAR_METHOD_LINK) ) {
+                boolean indent = false;
+                boolean createLinks = false;
+                String rawLink = Layouter.generateSnakeCaseFullMethodSignature(methodDoc);
+                String fullMethodSignature = this.generateFullMethodSignatureWithParameterNames(methodDoc, annotationsToRemove, indent, createLinks);
+                String formattedMethodLink = this.createLinkIfAnchorExists(fullMethodSignature, rawLink);
+                item = item.replace(VAR_METHOD_LINK, formattedMethodLink);
+            }
+            
+            if ( item.contains(VAR_METHOD_SHORT_DESCRIPTION) ) {
+                item = item.replace(VAR_METHOD_SHORT_DESCRIPTION,  this.createTagDescription(methodDoc.inlineTags(), true));
+            }
+            
+            if ( item.contains(VAR_METHOD_LONG_DESCRIPTION) ) {
+                item = item.replace(VAR_METHOD_LONG_DESCRIPTION, this.createTagDescription(methodDoc.inlineTags(), false));
+            }
+            
+            classListItems += item;
         }
         
-        layoutedText += this.formatter.heading(HEADING_METHOD_DETAIL, Formatter.HEADING_TWO);
-        
-        if ( documentedMethodCount == 0 ) {
-            layoutedText += this.formatter.paragraph(EMPTY_BODY);
-        }
-        
-        this.print(layoutedText);
+        return classListItems;
     }
     
     public void printFieldList(List<FieldDoc> fields, List<String> annotationsToRemove) {
