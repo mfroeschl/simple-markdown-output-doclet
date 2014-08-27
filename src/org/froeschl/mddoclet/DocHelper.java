@@ -48,6 +48,10 @@ public class DocHelper {
         return ( fieldDoc.tags().length > 0 || fieldDoc.inlineTags().length > 0);
     }
     
+    public static boolean hasParameters(MethodDoc methodDoc) {
+        return (methodDoc.parameters().length > 0 && methodDoc.paramTags().length > 0);
+    }
+    
     public static int countDocumentedMethods(List<MethodDoc> methods) {
         int count = 0;
         

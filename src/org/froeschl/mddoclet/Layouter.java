@@ -47,6 +47,11 @@ public class Layouter {
     private static final String LAYOUT_METHOD_LIST = "MethodList.layout";
     private static final String LAYOUT_METHOD_LIST_ITEMS_HEADER = "MethodListItemsHeader.layout";
     private static final String LAYOUT_METHOD_LIST_ITEM = "MethodListItem.layout";
+    private static final String LAYOUT_METHOD_DESCRIPTION = "MethodDescription.layout";
+    private static final String LAYOUT_METHOD_RETURN_INFO = "MethodReturnInfo.layout";
+    private static final String LAYOUT_PARAMETER_LIST = "ParameterList.layout";
+    private static final String LAYOUT_PARAMETER_LIST_ITEMS_HEADER = "ParameterListItemsHeader.layout";
+    private static final String LAYOUT_PARAMETER_LIST_ITEM = "ParameterListItem.layout";
     
     private static final String VAR_CLASS_LIST_ITEMS = "%CLASS_LIST_ITEMS%";
     private static final String VAR_CLASS_LIST_ITEMS_HEADER = "%CLASS_LIST_ITEMS_HEADER%";
@@ -61,6 +66,15 @@ public class Layouter {
     private static final String VAR_METHOD_LINK = "%METHOD_LINK%";
     private static final String VAR_METHOD_SHORT_DESCRIPTION = "%METHOD_SHORT_DESCRIPTION%";
     private static final String VAR_METHOD_LONG_DESCRIPTION = "%METHOD_LONG_DESCRIPTION%";
+    private static final String VAR_METHOD_TITLE = "%METHOD_TITLE%";
+    private static final String VAR_METHOD_SIGNATURE = "%METHOD_SIGNATURE%";
+    private static final String VAR_METHOD_RETURN_TYPE = "%METHOD_RETURN_TYPE%";
+    private static final String VAR_METHOD_RETURN_VALUE_DESCRIPTION = "%METHOD_RETURN_VALUE_DESCRIPTION%";
+    private static final String VAR_PARAMETER_LIST_ITEMS = "%PARAMETER_LIST_ITEMS%";
+    private static final String VAR_PARAMETER_LIST_ITEMS_HEADER = "%PARAMETER_LIST_ITEMS_HEADER%";
+    private static final String VAR_PARAMETER_TYPE_AND_NAME = "%PARAMETER_TYPE_AND_NAME%";
+    private static final String VAR_PARAMETER_SHORT_DESCRIPTION = "%PARAMETER_SHORT_DESCRIPTION%";
+    private static final String VAR_PARAMETER_LONG_DESCRIPTION = "%PARAMETER_LONG_DESCRIPTION%";
     private static final String VAR_TAG_AUTHOR = "%TAG_AUTHOR%";
     private static final String VAR_TAG_VERSION = "%TAG_VERSION%";
     private static final String VAR_TAG_SINCE = "%TAG_SINCE%";
@@ -68,12 +82,8 @@ public class Layouter {
     private static final String HEADING_CLASS = "Class";
     private static final String HEADING_ENUM = "Enum";
     private static final String HEADING_INTERFACE = "Interface";
-    private static final String HEADING_PARAMETERS = "Parameters";
-    private static final String HEADING_PARAMETER = "Parameter";
     private static final String HEADING_FIELD_SUMMARY = "Field Summary";
     private static final String HEADING_FIELD = "Field";
-    private static final String HEADING_RETURNS = "Returns";
-    private static final String HEADING_RETURN_TYPE = "Return Type";
     private static final String HEADING_DESCRIPTION = "Description";
     private static final String EMPTY_BODY = "-";
     private static final String LAST_UPDATED = "Last updated";
@@ -203,11 +213,13 @@ public class Layouter {
     public void printClassList(List<ClassDoc> classes) {
         String layout = this.loadLayoutFile(LAYOUT_CLASS_LIST);
         
-        if ( classes.size() > 0 ) {
-            String classListItemsHeader = this.loadLayoutFile(LAYOUT_CLASS_LIST_ITEMS_HEADER);
-            layout = layout.replace(VAR_CLASS_LIST_ITEMS_HEADER, classListItemsHeader);
-        } else {
-            layout = layout.replace(VAR_CLASS_LIST_ITEMS_HEADER, "");
+        if ( layout.contains(VAR_CLASS_LIST_ITEMS_HEADER) ) {
+            if ( classes.size() > 0 ) {
+                String classListItemsHeader = this.loadLayoutFile(LAYOUT_CLASS_LIST_ITEMS_HEADER);
+                layout = layout.replace(VAR_CLASS_LIST_ITEMS_HEADER, classListItemsHeader);
+            } else {
+                layout = layout.replace(VAR_CLASS_LIST_ITEMS_HEADER, "");
+            }
         }
         
         if ( layout.contains(VAR_CLASS_LIST_ITEMS) ) {
@@ -384,11 +396,13 @@ public class Layouter {
         int documentedMethodCount = DocHelper.countDocumentedMethods(methods);
         String layout = this.loadLayoutFile(LAYOUT_METHOD_LIST);
         
-        if ( documentedMethodCount > 0 ) {
-            String methodListItemsHeader = this.loadLayoutFile(LAYOUT_METHOD_LIST_ITEMS_HEADER);
-            layout = layout.replace(VAR_METHOD_LIST_ITEMS_HEADER, methodListItemsHeader);
-        } else {
-            layout = layout.replace(VAR_METHOD_LIST_ITEMS_HEADER, "");
+        if ( layout.contains(VAR_METHOD_LIST_ITEMS_HEADER) ) {
+            if ( documentedMethodCount > 0 ) {
+                String methodListItemsHeader = this.loadLayoutFile(LAYOUT_METHOD_LIST_ITEMS_HEADER);
+                layout = layout.replace(VAR_METHOD_LIST_ITEMS_HEADER, methodListItemsHeader);
+            } else {
+                layout = layout.replace(VAR_METHOD_LIST_ITEMS_HEADER, "");
+            }
         }
         
         if ( layout.contains(VAR_METHOD_LIST_ITEMS) ) {
@@ -469,35 +483,77 @@ public class Layouter {
     }
     
     private String createMethodDescription(MethodDoc methodDoc, List<String> annotationsToRemove) {
-        boolean indent = true;
-        boolean createLinks = false;
-        String snakeCaseFullMethodSignature = Layouter.generateSnakeCaseFullMethodSignature(methodDoc);
-        String fullMethodSignature = this.generateFullMethodSignatureWithParameterNames(methodDoc, annotationsToRemove, indent, createLinks);
-        String formattedMethodAnchor = this.createAnchor(methodDoc.name(), snakeCaseFullMethodSignature);
-        String layoutedText = this.formatter.heading(formattedMethodAnchor, Formatter.HEADING_TWO);
-        layoutedText += this.formatter.codeBlock(fullMethodSignature);
-        layoutedText += this.formatter.paragraph(this.createTagDescription(methodDoc.inlineTags(), false));
-        return layoutedText;
+        String layout = this.loadLayoutFile(LAYOUT_METHOD_DESCRIPTION);
+        
+        if ( layout.contains(VAR_METHOD_TITLE) ) {
+            String snakeCaseFullMethodSignature = Layouter.generateSnakeCaseFullMethodSignature(methodDoc);
+            String formattedMethodAnchor = this.createAnchor(methodDoc.name(), snakeCaseFullMethodSignature);
+            layout = layout.replace(VAR_METHOD_TITLE, formattedMethodAnchor);
+        }
+        
+        if ( layout.contains(VAR_METHOD_SIGNATURE) ) {
+            boolean indent = true;
+            boolean createLinks = false;
+            String fullMethodSignature = this.generateFullMethodSignatureWithParameterNames(methodDoc, annotationsToRemove, indent, createLinks);
+            layout = layout.replace(VAR_METHOD_SIGNATURE, fullMethodSignature);
+        }
+        
+        if ( layout.contains(VAR_METHOD_SHORT_DESCRIPTION) ) {
+            layout = layout.replace(VAR_METHOD_SHORT_DESCRIPTION, this.createTagDescription(methodDoc.inlineTags(), true));
+        }
+        
+        if ( layout.contains(VAR_METHOD_LONG_DESCRIPTION) ) {
+            layout = layout.replace(VAR_METHOD_LONG_DESCRIPTION, this.createTagDescription(methodDoc.inlineTags(), false));
+        }
+        
+        return layout;
     }
     
-    private String createParameterList(MethodDoc methodDoc, List<String> annotationsToRemove) {
-        String layoutedText = "";
-        
-        if ( methodDoc.parameters().length > 0 && methodDoc.paramTags().length > 0 ) {
-            layoutedText += this.formatter.heading(HEADING_PARAMETERS, Formatter.HEADING_THREE);
-            layoutedText += this.formatter.tableHeader(HEADING_PARAMETER, HEADING_DESCRIPTION);
+    public String createParameterList(MethodDoc methodDoc, List<String> annotationsToRemove) {
+        if ( !DocHelper.hasParameters(methodDoc) ) {
+            return "";
         }
+        
+        String layout = this.loadLayoutFile(LAYOUT_PARAMETER_LIST);
+        
+        if ( layout.contains(VAR_PARAMETER_LIST_ITEMS_HEADER) ) {
+            String methodListItemsHeader = this.loadLayoutFile(LAYOUT_PARAMETER_LIST_ITEMS_HEADER);
+            layout = layout.replace(VAR_PARAMETER_LIST_ITEMS_HEADER, methodListItemsHeader);
+        }
+        
+        if ( layout.contains(VAR_PARAMETER_LIST_ITEMS) ) {
+            layout = layout.replace(VAR_PARAMETER_LIST_ITEMS, this.createParameterListItems(methodDoc, annotationsToRemove));
+        }
+        
+        return layout;
+    }
+    
+    private String createParameterListItems(MethodDoc methodDoc, List<String> annotationsToRemove) {
+        String itemLayout = this.loadLayoutFile(LAYOUT_PARAMETER_LIST_ITEM);
+        String classListItems = "";
         
         for ( int i = 0; i < methodDoc.parameters().length && i < methodDoc.paramTags().length; i++ ) {
+            String item = itemLayout;
             Parameter parameter = methodDoc.parameters()[i];
             ParamTag paramTag = methodDoc.paramTags()[i];
-            String name = this.generateParameterName(parameter, annotationsToRemove, true);
-            String description = this.createTagDescription(paramTag.inlineTags(), true);
-            description = Layouter.toSingleLine(description);
-            layoutedText += this.formatter.tableRow(name, description);
+            
+            if ( item.contains(VAR_PARAMETER_TYPE_AND_NAME) ) {
+                String name = this.generateParameterName(parameter, annotationsToRemove, true);
+                item = item.replace(VAR_PARAMETER_TYPE_AND_NAME, name);
+            }
+            
+            if ( item.contains(VAR_PARAMETER_SHORT_DESCRIPTION) ) {
+                item = item.replace(VAR_PARAMETER_SHORT_DESCRIPTION,  this.createTagDescription(paramTag.inlineTags(), true));
+            }
+            
+            if ( item.contains(VAR_PARAMETER_LONG_DESCRIPTION) ) {
+                item = item.replace(VAR_PARAMETER_LONG_DESCRIPTION, this.createTagDescription(paramTag.inlineTags(), false));
+            }
+            
+            classListItems += item;
         }
         
-        return layoutedText;
+        return classListItems;
     }
     
     private String createTagDescription(Tag[] inlineTags, boolean shortDescription) {
@@ -550,19 +606,30 @@ public class Layouter {
     }
     
     private String createReturnInfo(MethodDoc methodDoc) {
-        String layoutedText = this.formatter.heading(HEADING_RETURNS, Formatter.HEADING_THREE);
-        layoutedText += this.formatter.tableHeader(HEADING_RETURN_TYPE, HEADING_DESCRIPTION);
-        String returnDescription = "";
+        String layout = this.loadLayoutFile(LAYOUT_METHOD_RETURN_INFO);
         
-        for ( Tag tag : methodDoc.tags() ) {
-            if ( tag.name().equals(TAG_RETURN) ) {
-                returnDescription = tag.text();
-                break;
-            }
+        if ( layout.contains(VAR_METHOD_RETURN_TYPE) ) {
+            layout = layout.replace(VAR_METHOD_RETURN_TYPE, methodDoc.returnType().typeName());
         }
         
-        layoutedText += this.formatter.tableRow(methodDoc.returnType().typeName(), returnDescription);
-        return layoutedText;
+        if ( layout.contains(VAR_METHOD_RETURN_VALUE_DESCRIPTION) ) {
+            String returnDescription = "";
+            
+            for ( Tag tag : methodDoc.tags() ) {
+                if ( tag.name().equals(TAG_RETURN) ) {
+                    returnDescription = tag.text();
+                    break;
+                }
+            }
+            
+            if ( returnDescription.isEmpty() ) {
+                returnDescription = EMPTY_BODY;
+            }
+            
+            layout = layout.replace(VAR_METHOD_RETURN_VALUE_DESCRIPTION, returnDescription);
+        }
+        
+        return layout;
     }
     
     private String createMethodIncludes(MethodDoc methodDoc) {
