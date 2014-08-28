@@ -51,6 +51,7 @@ public class Options {
     public static final String KEY_NO_ENUMS = "-noenums";
     public static final String KEY_NO_NESTED_CLASSES = "-nonested";
     public static final String KEY_INCLUDE_HIDDEN = "-includehidden";
+    public static final String KEY_OMMIT_EMPTY_SECTIONS = "-ommitempty";
     public static final String KEY_ANNOTATIONS_TO_BE_REMOVED = "-removeannotations";
     
     private static final String LF = "\n";
@@ -67,6 +68,7 @@ public class Options {
     private static final boolean DEFAULT_NO_INTERFACES = false;
     private static final boolean DEFAULT_NO_NESTED_CLASSES = false;
     private static final boolean DEFAULT_INCLUDE_HIDDEN = false;
+    private static final boolean DEFAULT_OMMIT_EMPTY_SECTIONS = false;
     private static final List<String> DEFAULT_ANNOTATIONS_TO_BE_REMOVED = new ArrayList<String>();;
     
     public static Map<String, Integer> optionToOptionLength;
@@ -85,6 +87,7 @@ public class Options {
         Options.optionToOptionLength.put(KEY_NO_INTERFACES, 1);
         Options.optionToOptionLength.put(KEY_NO_NESTED_CLASSES, 1);
         Options.optionToOptionLength.put(KEY_INCLUDE_HIDDEN, 1);
+        Options.optionToOptionLength.put(KEY_OMMIT_EMPTY_SECTIONS, 1);
     }
     
     private String outputFile = DEFAULT_OUTPUT_FILE;
@@ -99,6 +102,7 @@ public class Options {
     private boolean noInterfaces = DEFAULT_NO_INTERFACES;
     private boolean noNestedClasses = DEFAULT_NO_NESTED_CLASSES;
     private boolean includeHidden = DEFAULT_INCLUDE_HIDDEN;
+    private boolean ommitEmptySections = DEFAULT_OMMIT_EMPTY_SECTIONS;
     private List<String> annotationsToBeRemoved = DEFAULT_ANNOTATIONS_TO_BE_REMOVED;
     
     private Options() {
@@ -148,6 +152,8 @@ public class Options {
                 this.noNestedClasses = true;
             } else if ( option[0].equals(KEY_INCLUDE_HIDDEN) ) {
                 this.includeHidden = true;
+            } else if ( option[0].equals(KEY_OMMIT_EMPTY_SECTIONS) ) {
+                this.ommitEmptySections = true;
             }
         }
         
@@ -212,6 +218,10 @@ public class Options {
         return this.includeHidden;
     }
     
+    public boolean getOmmitEmptySections() {
+        return this.ommitEmptySections;
+    }
+    
     public List<String> getAnnotationsToBeRemoved() {
         return this.annotationsToBeRemoved;
     }
@@ -229,6 +239,7 @@ public class Options {
         result += LF + "noInterfaces = " + this.noInterfaces;
         result += LF + "noNestedClasses = " + this.noNestedClasses;
         result += LF + "includeHidden = " + this.includeHidden;
+        result += LF + "ommitEmptySections = " + this.ommitEmptySections;
         result += LF + "annotationsToBeRemoved = {";
         
         for ( int i = 0; i < this.annotationsToBeRemoved.size(); i++ ) {

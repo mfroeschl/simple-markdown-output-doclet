@@ -205,10 +205,6 @@ public class Editor {
     }
     
     private void createAllMethods(MethodDoc[] methods) {
-        List<MethodDoc> filteredMethods = this.filterMethods(methods);
-        
-        for ( MethodDoc methodDoc : filteredMethods ) {
-            this.layouter.printMethodInfo(methodDoc, this.options.getAnnotationsToBeRemoved());
-        }
+        this.layouter.printAllMethods(this.filterMethods(methods), this.options.getAnnotationsToBeRemoved());
     }
 }

@@ -49,12 +49,14 @@ public class Layouter {
     private static final String LAYOUT_METHOD_LIST_ITEM = "MethodListItem.layout";
     private static final String LAYOUT_METHOD_DESCRIPTION = "MethodDescription.layout";
     private static final String LAYOUT_METHOD_RETURN_INFO = "MethodReturnInfo.layout";
+    private static final String LAYOUT_METHOD_DETAIL_HEADER = "MethodDetailHeader.layout";
     private static final String LAYOUT_PARAMETER_LIST = "ParameterList.layout";
     private static final String LAYOUT_PARAMETER_LIST_ITEMS_HEADER = "ParameterListItemsHeader.layout";
     private static final String LAYOUT_PARAMETER_LIST_ITEM = "ParameterListItem.layout";
     private static final String LAYOUT_FIELD_LIST = "FieldList.layout";
     private static final String LAYOUT_FIELD_LIST_ITEMS_HEADER = "FieldListItemsHeader.layout";
     private static final String LAYOUT_FIELD_LIST_ITEM = "FieldListItem.layout";
+    private static final String LAYOUT_EMPTY_LIST = "EmptyList.layout";
     
     private static final String VAR_CLASS_LIST_ITEMS = "%CLASS_LIST_ITEMS%";
     private static final String VAR_CLASS_LIST_ITEMS_HEADER = "%CLASS_LIST_ITEMS_HEADER%";
@@ -216,19 +218,30 @@ public class Layouter {
     }
     
     public void printClassList(List<ClassDoc> classes) {
-        String layout = this.loadLayoutFile(LAYOUT_CLASS_LIST);
-        
-        if ( layout.contains(VAR_CLASS_LIST_ITEMS_HEADER) ) {
-            if ( classes.size() > 0 ) {
-                String classListItemsHeader = this.loadLayoutFile(LAYOUT_CLASS_LIST_ITEMS_HEADER);
-                layout = layout.replace(VAR_CLASS_LIST_ITEMS_HEADER, classListItemsHeader);
-            } else {
-                layout = layout.replace(VAR_CLASS_LIST_ITEMS_HEADER, "");
+        if ( classes.size() == 0 ) {
+            if ( this.options.getOmmitEmptySections() ) {
+                return;
             }
         }
         
+        String layout = this.loadLayoutFile(LAYOUT_CLASS_LIST);
+        String header = "";
+        String items = "";
+        
+        if ( classes.size() > 0 ) {
+            header = this.loadLayoutFile(LAYOUT_CLASS_LIST_ITEMS_HEADER);
+            items = this.createClassListItems(classes);
+        } else {
+            header = this.loadLayoutFile(LAYOUT_EMPTY_LIST);
+            items = "";
+        }
+        
+        if ( layout.contains(VAR_CLASS_LIST_ITEMS_HEADER) ) {
+            layout = layout.replace(VAR_CLASS_LIST_ITEMS_HEADER, header);
+        }
+        
         if ( layout.contains(VAR_CLASS_LIST_ITEMS) ) {
-            layout = layout.replace(VAR_CLASS_LIST_ITEMS, this.createClassListItems(classes));
+            layout = layout.replace(VAR_CLASS_LIST_ITEMS, items);
         }
         
         this.print(layout);
@@ -399,19 +412,31 @@ public class Layouter {
     
     public void printMethodList(List<MethodDoc> methods, List<String> annotationsToRemove) {
         int documentedMethodCount = DocHelper.countDocumentedMethods(methods);
-        String layout = this.loadLayoutFile(LAYOUT_METHOD_LIST);
         
-        if ( layout.contains(VAR_METHOD_LIST_ITEMS_HEADER) ) {
-            if ( documentedMethodCount > 0 ) {
-                String methodListItemsHeader = this.loadLayoutFile(LAYOUT_METHOD_LIST_ITEMS_HEADER);
-                layout = layout.replace(VAR_METHOD_LIST_ITEMS_HEADER, methodListItemsHeader);
-            } else {
-                layout = layout.replace(VAR_METHOD_LIST_ITEMS_HEADER, "");
+        if ( documentedMethodCount == 0 ) {
+            if ( this.options.getOmmitEmptySections() ) {
+                return;
             }
         }
         
+        String layout = this.loadLayoutFile(LAYOUT_METHOD_LIST);
+        String header = "";
+        String items = "";
+        
+        if ( documentedMethodCount > 0 ) {
+            header = this.loadLayoutFile(LAYOUT_METHOD_LIST_ITEMS_HEADER);
+            items = this.createMethodListItems(methods, annotationsToRemove);
+        } else {
+            header = this.loadLayoutFile(LAYOUT_EMPTY_LIST);
+            items = "";
+        }
+        
+        if ( layout.contains(VAR_METHOD_LIST_ITEMS_HEADER) ) {
+            layout = layout.replace(VAR_METHOD_LIST_ITEMS_HEADER, header);
+        }
+        
         if ( layout.contains(VAR_METHOD_LIST_ITEMS) ) {
-            layout = layout.replace(VAR_METHOD_LIST_ITEMS, this.createMethodListItems(methods, annotationsToRemove));
+            layout = layout.replace(VAR_METHOD_LIST_ITEMS, items);
         }
         
         this.print(layout);
@@ -450,48 +475,33 @@ public class Layouter {
         return classListItems;
     }
     
-    /*
     public void printFieldList(List<FieldDoc> fields, List<String> annotationsToRemove) {
-        String layoutedText = this.formatter.heading(HEADING_FIELD_SUMMARY, Formatter.HEADING_TWO);
-        
         int documentedFieldCount = DocHelper.countDocumentedFields(fields);
+        
+        if ( documentedFieldCount == 0 ) {
+            if ( this.options.getOmmitEmptySections() ) {
+                return;
+            }
+        }
+        
+        String layout = this.loadLayoutFile(LAYOUT_FIELD_LIST);
+        String header = "";
+        String items = "";
         
         if ( documentedFieldCount > 0 ) {
-            layoutedText += this.formatter.tableHeader(HEADING_FIELD, HEADING_DESCRIPTION);
+            header = this.loadLayoutFile(LAYOUT_FIELD_LIST_ITEMS_HEADER);
+            items = this.createFieldListItems(fields, annotationsToRemove);
         } else {
-            layoutedText += this.formatter.paragraph(EMPTY_BODY);
+            header = this.loadLayoutFile(LAYOUT_EMPTY_LIST);
+            items = "";
         }
-        
-        for ( FieldDoc fieldDoc : fields ) {
-            if ( !DocHelper.isDocumented(fieldDoc) ) {
-                continue;
-            }
-            
-            String rawLink = fieldDoc.qualifiedName();
-            String formattedFieldLink = this.createLinkIfAnchorExists(fieldDoc.name(), rawLink);
-            String fieldDescription = Layouter.toSingleLine(this.createTagDescription(fieldDoc.inlineTags(), true));
-            layoutedText += this.formatter.tableRow(formattedFieldLink, fieldDescription);
-        }
-        
-        this.print(layoutedText);
-    }
-    */
-    
-    public void printFieldList(List<FieldDoc> fields, List<String> annotationsToRemove) {
-        int documentedFieldCount = DocHelper.countDocumentedFields(fields);
-        String layout = this.loadLayoutFile(LAYOUT_FIELD_LIST);
         
         if ( layout.contains(VAR_FIELD_LIST_ITEMS_HEADER) ) {
-            if ( documentedFieldCount > 0 ) {
-                String fieldListItemsHeader = this.loadLayoutFile(LAYOUT_FIELD_LIST_ITEMS_HEADER);
-                layout = layout.replace(VAR_FIELD_LIST_ITEMS_HEADER, fieldListItemsHeader);
-            } else {
-                layout = layout.replace(VAR_FIELD_LIST_ITEMS_HEADER, "");
-            }
+            layout = layout.replace(VAR_FIELD_LIST_ITEMS_HEADER, header);
         }
         
         if ( layout.contains(VAR_FIELD_LIST_ITEMS) ) {
-            layout = layout.replace(VAR_FIELD_LIST_ITEMS, this.createFieldListItems(fields, annotationsToRemove));
+            layout = layout.replace(VAR_FIELD_LIST_ITEMS, items);
         }
         
         this.print(layout);
@@ -527,7 +537,29 @@ public class Layouter {
         return classListItems;
     }
     
-    public void printMethodInfo(MethodDoc methodDoc, List<String> annotationsToRemove) {
+    public void printAllMethods(List<MethodDoc> methodDocs, List<String> annotationsToRemove) {
+        int documentedMethodCount = DocHelper.countDocumentedMethods(methodDocs);
+        
+        if ( documentedMethodCount == 0 ) {
+            if ( this.options.getOmmitEmptySections() ) {
+                return;
+            }
+        }
+        
+        String layout = this.loadLayoutFile(LAYOUT_METHOD_DETAIL_HEADER);
+        
+        if ( documentedMethodCount == 0 ) {
+            layout += this.loadLayoutFile(LAYOUT_EMPTY_LIST);
+        }
+        
+        this.print(layout);
+        
+        for ( MethodDoc methodDoc : methodDocs ) {
+            this.printMethodInfo(methodDoc, this.options.getAnnotationsToBeRemoved());
+        }
+    }
+    
+    private void printMethodInfo(MethodDoc methodDoc, List<String> annotationsToRemove) {
         if ( !DocHelper.isDocumented(methodDoc) ) {
             return;
         }
@@ -568,18 +600,29 @@ public class Layouter {
     
     public String createParameterList(MethodDoc methodDoc, List<String> annotationsToRemove) {
         if ( !DocHelper.hasParameters(methodDoc) ) {
-            return "";
+            if ( this.options.getOmmitEmptySections() ) {
+                return "";
+            }
         }
         
         String layout = this.loadLayoutFile(LAYOUT_PARAMETER_LIST);
+        String header = "";
+        String items = "";
+        
+        if ( DocHelper.hasParameters(methodDoc) ) {
+            header = this.loadLayoutFile(LAYOUT_PARAMETER_LIST_ITEMS_HEADER);
+            items = this.createParameterListItems(methodDoc, annotationsToRemove);
+        } else {
+            header = this.loadLayoutFile(LAYOUT_EMPTY_LIST);
+            items = "";
+        }
         
         if ( layout.contains(VAR_PARAMETER_LIST_ITEMS_HEADER) ) {
-            String methodListItemsHeader = this.loadLayoutFile(LAYOUT_PARAMETER_LIST_ITEMS_HEADER);
-            layout = layout.replace(VAR_PARAMETER_LIST_ITEMS_HEADER, methodListItemsHeader);
+            layout = layout.replace(VAR_PARAMETER_LIST_ITEMS_HEADER, header);
         }
         
         if ( layout.contains(VAR_PARAMETER_LIST_ITEMS) ) {
-            layout = layout.replace(VAR_PARAMETER_LIST_ITEMS, this.createParameterListItems(methodDoc, annotationsToRemove));
+            layout = layout.replace(VAR_PARAMETER_LIST_ITEMS, items);
         }
         
         return layout;
