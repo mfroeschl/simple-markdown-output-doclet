@@ -104,6 +104,7 @@ public class Layouter {
     private static final String IMPLEMENTS = "implements";
     private static final String ENUM = "enum";
     private static final String CLASS = "class";
+    private static final String RETURN_TYPE_VOID = "void";
     
     private static final String TAG_LINK = "@link";
     private static final String TAG_RETURN = "@return";
@@ -738,10 +739,18 @@ public class Layouter {
     }
     
     private String createReturnInfo(MethodDoc methodDoc) {
+        String returnType = methodDoc.returnType().typeName();
+        
+        if ( this.options.getOmmitVoidReturnType() ) {
+            if ( returnType.equals(RETURN_TYPE_VOID) ) {
+                return "";
+            }
+        }
+        
         String layout = this.loadLayoutFile(LAYOUT_METHOD_RETURN_INFO);
         
         if ( layout.contains(VAR_METHOD_RETURN_TYPE) ) {
-            layout = layout.replace(VAR_METHOD_RETURN_TYPE, methodDoc.returnType().typeName());
+            layout = layout.replace(VAR_METHOD_RETURN_TYPE, returnType);
         }
         
         if ( layout.contains(VAR_METHOD_RETURN_VALUE_DESCRIPTION) ) {

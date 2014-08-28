@@ -52,6 +52,7 @@ public class Options {
     public static final String KEY_NO_NESTED_CLASSES = "-nonested";
     public static final String KEY_INCLUDE_HIDDEN = "-includehidden";
     public static final String KEY_OMMIT_EMPTY_SECTIONS = "-ommitempty";
+    public static final String KEY_OMMIT_VOID_RETURN_TYPE = "-ommitvoid";
     public static final String KEY_ANNOTATIONS_TO_BE_REMOVED = "-removeannotations";
     
     private static final String LF = "\n";
@@ -69,6 +70,7 @@ public class Options {
     private static final boolean DEFAULT_NO_NESTED_CLASSES = false;
     private static final boolean DEFAULT_INCLUDE_HIDDEN = false;
     private static final boolean DEFAULT_OMMIT_EMPTY_SECTIONS = false;
+    private static final boolean DEFAULT_OMMIT_VOID_RETURN_TYPE = false;
     private static final List<String> DEFAULT_ANNOTATIONS_TO_BE_REMOVED = new ArrayList<String>();;
     
     public static Map<String, Integer> optionToOptionLength;
@@ -88,6 +90,7 @@ public class Options {
         Options.optionToOptionLength.put(KEY_NO_NESTED_CLASSES, 1);
         Options.optionToOptionLength.put(KEY_INCLUDE_HIDDEN, 1);
         Options.optionToOptionLength.put(KEY_OMMIT_EMPTY_SECTIONS, 1);
+        Options.optionToOptionLength.put(KEY_OMMIT_VOID_RETURN_TYPE, 1);
     }
     
     private String outputFile = DEFAULT_OUTPUT_FILE;
@@ -103,6 +106,7 @@ public class Options {
     private boolean noNestedClasses = DEFAULT_NO_NESTED_CLASSES;
     private boolean includeHidden = DEFAULT_INCLUDE_HIDDEN;
     private boolean ommitEmptySections = DEFAULT_OMMIT_EMPTY_SECTIONS;
+    private boolean ommitVoidReturnType = DEFAULT_OMMIT_VOID_RETURN_TYPE;
     private List<String> annotationsToBeRemoved = DEFAULT_ANNOTATIONS_TO_BE_REMOVED;
     
     private Options() {
@@ -154,6 +158,8 @@ public class Options {
                 this.includeHidden = true;
             } else if ( option[0].equals(KEY_OMMIT_EMPTY_SECTIONS) ) {
                 this.ommitEmptySections = true;
+            } else if ( option[0].equals(KEY_OMMIT_VOID_RETURN_TYPE) ) {
+                this.ommitVoidReturnType = true;
             }
         }
         
@@ -220,6 +226,10 @@ public class Options {
     
     public boolean getOmmitEmptySections() {
         return this.ommitEmptySections;
+    }
+    
+    public boolean getOmmitVoidReturnType() {
+        return this.ommitVoidReturnType;
     }
     
     public List<String> getAnnotationsToBeRemoved() {
