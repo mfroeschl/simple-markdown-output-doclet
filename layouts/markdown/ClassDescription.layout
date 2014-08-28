@@ -16,11 +16,8 @@
 **Description:**  
 %CLASS_LONG_DESCRIPTION%
 
-**Author:**  
-%TAG_AUTHOR%
+%HEADER_AUTHOR%%TAG_AUTHOR%
 
-**Version:**  
-%TAG_VERSION%
+%HEADER_VERSION%%TAG_VERSION%
 
-**Since:**  
-%TAG_SINCE%
+%HEADER_SINCE%%TAG_SINCE%

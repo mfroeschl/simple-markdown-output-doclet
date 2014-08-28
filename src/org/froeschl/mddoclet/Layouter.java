@@ -57,6 +57,9 @@ public class Layouter {
     private static final String LAYOUT_FIELD_LIST_ITEMS_HEADER = "FieldListItemsHeader.layout";
     private static final String LAYOUT_FIELD_LIST_ITEM = "FieldListItem.layout";
     private static final String LAYOUT_EMPTY_LIST = "EmptyList.layout";
+    private static final String LAYOUT_HEADER_AUTHOR = "AuthorHeader.layout";
+    private static final String LAYOUT_HEADER_VERSION = "VersionHeader.layout";
+    private static final String LAYOUT_HEADER_SINCE = "SinceHeader.layout";
     
     private static final String VAR_CLASS_LIST_ITEMS = "%CLASS_LIST_ITEMS%";
     private static final String VAR_CLASS_LIST_ITEMS_HEADER = "%CLASS_LIST_ITEMS_HEADER%";
@@ -88,6 +91,9 @@ public class Layouter {
     private static final String VAR_TAG_AUTHOR = "%TAG_AUTHOR%";
     private static final String VAR_TAG_VERSION = "%TAG_VERSION%";
     private static final String VAR_TAG_SINCE = "%TAG_SINCE%";
+    private static final String VAR_HEADER_AUTHOR = "%HEADER_AUTHOR%";
+    private static final String VAR_HEADER_VERSION = "%HEADER_VERSION%";
+    private static final String VAR_HEADER_SINCE = "%HEADER_SINCE%";
     
     private static final String HEADING_CLASS = "Class";
     private static final String HEADING_ENUM = "Enum";
@@ -106,12 +112,24 @@ public class Layouter {
     private static final String TAG_VERSION = "@version";
     private static final String TAG_SINCE = "@since";
     
+    static private class TagInfo {
+        private final String varHeader;
+        private final String varValue;
+        private final String layoutHeader;
+        
+        public TagInfo(String varHeader, String varValue, String layoutHeader) {
+            this.varHeader = varHeader;
+            this.varValue = varValue;
+            this.layoutHeader = layoutHeader;
+        }
+    }
+    
     final private Options options;
     final private Formatter formatter;
     final private Printer printer;
     private Mode mode = Mode.PREPARE;
     private Map<String, String> anchors = new HashMap<String, String>();
-    private Map<String, String> tagToVar = new HashMap<String, String>();
+    private Map<String, TagInfo> tagInfos = new HashMap<String, TagInfo>();
     
     public Layouter(Options options, Formatter formatter, Printer printer) {
         if ( formatter == null || printer == null ) {
@@ -122,9 +140,9 @@ public class Layouter {
         this.formatter = formatter;
         this.printer = printer;
         this.mode = Mode.PREPARE;
-        this.tagToVar.put(TAG_AUTHOR, VAR_TAG_AUTHOR);
-        this.tagToVar.put(TAG_VERSION, VAR_TAG_VERSION);
-        this.tagToVar.put(TAG_SINCE, VAR_TAG_SINCE);
+        this.tagInfos.put(TAG_AUTHOR, new TagInfo(VAR_HEADER_AUTHOR, VAR_TAG_AUTHOR, LAYOUT_HEADER_AUTHOR));
+        this.tagInfos.put(TAG_VERSION, new TagInfo(VAR_HEADER_VERSION, VAR_TAG_VERSION, LAYOUT_HEADER_VERSION));
+        this.tagInfos.put(TAG_SINCE, new TagInfo(VAR_HEADER_SINCE, VAR_TAG_SINCE, LAYOUT_HEADER_SINCE));
     }
     
     public void setMode(Mode mode) {
@@ -295,19 +313,33 @@ public class Layouter {
         }
         
         for ( Tag tag : classDoc.tags() ) {
-            String tagVar = this.tagToVar.get(tag.name());
+            TagInfo tagInfo = this.tagInfos.get(tag.name());
             
-            if ( tagVar == null ) {
+            if ( tagInfo == null ) {
                 continue;
             }
             
-            if ( layout.contains(tagVar) ) {
-                layout = layout.replace(tagVar, tag.text());
+            if ( layout.contains(tagInfo.varHeader) ) {
+                layout = layout.replace(tagInfo.varHeader, this.loadLayoutFile(tagInfo.layoutHeader));
+            }
+            
+            if ( layout.contains(tagInfo.varValue) ) {
+                layout = layout.replace(tagInfo.varValue, tag.text());
             }
         }
         
-        for ( String tagVar : this.tagToVar.values() ) {
-            layout = layout.replace(tagVar, "");
+        for ( TagInfo tagInfo : this.tagInfos.values() ) {
+            if ( layout.contains(tagInfo.varHeader) ) {
+                if ( this.options.getOmmitEmptySections() ) {
+                    layout = layout.replace(tagInfo.varHeader, "");
+                } else {
+                    layout = layout.replace(tagInfo.varHeader, this.loadLayoutFile(tagInfo.layoutHeader));
+                }
+            }
+            
+            if ( layout.contains(tagInfo.varValue) ) {
+                layout = layout.replace(tagInfo.varValue, "");
+            }
         }
         
         this.print(layout);
