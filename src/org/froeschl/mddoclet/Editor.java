@@ -5,8 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.froeschl.mddoclet.Layouter.Mode;
+import org.froeschl.mddoclet.Options.DocumentGroup;
 import org.froeschl.mddoclet.formatter.Formatter;
 import org.froeschl.mddoclet.printer.Printer;
+import org.froeschl.mddoclet.utils.FileUtils;
 
 import com.sun.javadoc.ClassDoc;
 import com.sun.javadoc.FieldDoc;
@@ -40,13 +42,19 @@ public class Editor {
         System.out.println(this.options.toString());
         System.out.println("");
         
+        this.deleteFiles();
+        
         this.layouter.setMode(Mode.PREPARE);
         this.layouter.printDocumentTitleAndHeader();
+        this.createGroupList();
+        this.createGroupHeaders();
         this.createClassList(classes);
         this.createAllClasses(classes);
         
         this.layouter.setMode(Mode.PRINT);
         this.layouter.printDocumentTitleAndHeader();
+        this.createGroupList();
+        this.createGroupHeaders();
         this.createClassList(classes);
         this.createAllClasses(classes);
     }
@@ -174,6 +182,22 @@ public class Editor {
         }
         
         return filteredFields;
+    }
+    
+    private void deleteFiles() {
+        for ( DocumentGroup group : this.options.getDocumentGroups().values() ) {
+            FileUtils.deleteFileOrFolder(group.fullFilePath);
+        }
+        
+        FileUtils.deleteFileOrFolder(this.options.getFullMainFilePath());
+    }
+    
+    private void createGroupList() {
+        this.layouter.printGroupList();
+    }
+    
+    private void createGroupHeaders() {
+        this.layouter.printGroupHeaders();
     }
     
     private void createClassList(ClassDoc[] classes) {

@@ -42,6 +42,9 @@ public class Layouter {
     private static final String BRCLOSE = ")";
     private static final String INDENT = "    ";
     
+    private static final String LAYOUT_GROUP_LIST = "GroupList.layout";
+    private static final String LAYOUT_GROUP_LIST_ITEMS_HEADER = "GroupListItemsHeader.layout";
+    private static final String LAYOUT_GROUP_LIST_ITEM = "GroupListItem.layout";
     private static final String LAYOUT_CLASS_LIST = "ClassList.layout";
     private static final String LAYOUT_CLASS_LIST_ITEMS_HEADER = "ClassListItemsHeader.layout";
     private static final String LAYOUT_CLASS_LIST_ITEM = "ClassListItem.layout";
@@ -63,6 +66,9 @@ public class Layouter {
     private static final String LAYOUT_HEADER_VERSION = "VersionHeader.layout";
     private static final String LAYOUT_HEADER_SINCE = "SinceHeader.layout";
     
+    private static final String VAR_GROUP_LIST_ITEMS = "%GROUP_LIST_ITEMS%";
+    private static final String VAR_GROUP_LIST_ITEMS_HEADER = "%GROUP_LIST_ITEMS_HEADER%";
+    private static final String VAR_GROUP_TITLE = "%GROUP_TITLE%";
     private static final String VAR_CLASS_LIST_ITEMS = "%CLASS_LIST_ITEMS%";
     private static final String VAR_CLASS_LIST_ITEMS_HEADER = "%CLASS_LIST_ITEMS_HEADER%";
     private static final String VAR_CLASS_LINK = "%CLASS_LINK%";
@@ -96,6 +102,7 @@ public class Layouter {
     private static final String VAR_HEADER_AUTHOR = "%HEADER_AUTHOR%";
     private static final String VAR_HEADER_VERSION = "%HEADER_VERSION%";
     private static final String VAR_HEADER_SINCE = "%HEADER_SINCE%";
+    private static final String VAR_LAST_UPDATED = "%LAST_UPDATED%";
     
     private static final String HEADING_CLASS = "Class";
     private static final String HEADING_ENUM = "Enum";
@@ -107,6 +114,8 @@ public class Layouter {
     private static final String ENUM = "enum";
     private static final String CLASS = "class";
     private static final String RETURN_TYPE_VOID = "void";
+    private static final String HEADER_SUFFIX = "Header";
+    private static final String LAYOUT_FILE_EXTENSION = ".layout";
     
     private static final String TAG_LINK = "@link";
     private static final String TAG_RETURN = "@return";
@@ -192,6 +201,12 @@ public class Layouter {
         return result;
     }
     
+    private void createGroupAnchors() {
+        for ( DocumentGroup group : this.options.getDocumentGroups().values() ) {
+            this.anchors.put(group.getFile(), group.getFile());
+        }
+    }
+    
     private String createAnchor(String title, String anchor) {
         String currentOutputFile = new String(this.currentOutputFile);
         this.anchors.put(anchor, currentOutputFile);
@@ -261,6 +276,79 @@ public class Layouter {
         layoutedText += this.formatter.horizontalRule();
         layoutedText += this.includeFile(this.options.getDocumentHeader()); 
         this.print(layoutedText);
+    }
+    
+    public void printGroupList() {
+        if ( this.options.getDocumentGroups().size() == 0 ) {
+            if ( this.options.getOmmitEmptySections() ) {
+                return;
+            }
+        }
+        
+        this.createGroupAnchors();
+        
+        String layout = this.loadLayoutFile(LAYOUT_GROUP_LIST);
+        String header = "";
+        String items = "";
+        
+        if ( this.options.getDocumentGroups().size() > 0 ) {
+            header = this.loadLayoutFile(LAYOUT_GROUP_LIST_ITEMS_HEADER);
+            items = this.createGroupListItems();
+        } else {
+            header = this.loadLayoutFile(LAYOUT_EMPTY_LIST);
+            items = "";
+        }
+        
+        if ( layout.contains(VAR_GROUP_LIST_ITEMS_HEADER) ) {
+            layout = layout.replace(VAR_GROUP_LIST_ITEMS_HEADER, header);
+        }
+        
+        if ( layout.contains(VAR_GROUP_LIST_ITEMS) ) {
+            layout = layout.replace(VAR_GROUP_LIST_ITEMS, items);
+        }
+        
+        this.print(layout);
+    }
+    
+    private String createGroupListItems() {
+        String itemLayout = this.loadLayoutFile(LAYOUT_GROUP_LIST_ITEM);
+        String classListItems = "";
+        
+        for ( DocumentGroup group : this.options.getDocumentGroups().values() ) {
+            String item = itemLayout;
+            if ( item.contains(VAR_GROUP_TITLE) ) {
+                item = item.replace(VAR_GROUP_TITLE, this.createLinkIfAnchorExists(group.getTitle(), group.getFile()));
+            }
+            
+            classListItems += item;
+        }
+        
+        return classListItems;
+    }
+    
+    public void printGroupHeaders() {
+        String currentOutputFileFullPath = this.currentOutputFileFullPath;
+        String currentOutputFile = this.currentOutputFile;
+        Date date = new Date();
+        SimpleDateFormat dateFormatter = new SimpleDateFormat();
+        dateFormatter.applyPattern("yyyy-MM-dd");
+        String dateText = dateFormatter.format(date);
+        
+        for ( DocumentGroup group : this.options.getDocumentGroups().values() ) {
+            this.currentOutputFileFullPath = group.getFullFilePath();
+            this.currentOutputFile = group.getFile();
+            
+            String layout = this.loadLayoutFile(group.getTitle() + HEADER_SUFFIX + LAYOUT_FILE_EXTENSION);
+            
+            if ( layout.contains(VAR_LAST_UPDATED) ) {
+                layout = layout.replace(VAR_LAST_UPDATED, dateText);
+            }
+            
+            this.print(layout);
+        }
+        
+        this.currentOutputFileFullPath = currentOutputFileFullPath;
+        this.currentOutputFile = currentOutputFile;
     }
     
     public void printClassList(List<ClassDoc> classes) {
