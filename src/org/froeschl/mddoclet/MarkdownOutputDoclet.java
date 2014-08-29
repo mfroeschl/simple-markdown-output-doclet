@@ -10,7 +10,7 @@ public class MarkdownOutputDoclet {
     
     public static boolean start(RootDoc root) {
         Options options = Options.fromCommandLine(root.options());
-        MarkdownOutputDoclet.editor = new Editor(options, new MarkdownFormatter(), new FilePrinter(options.getFullOutputFilePath()));
+        MarkdownOutputDoclet.editor = new Editor(options, new MarkdownFormatter(), new FilePrinter());
         MarkdownOutputDoclet.editor.authorDocument(root);
         return true;
     }

@@ -42,15 +42,27 @@ public class Options {
     
     public class DocumentGroup {
         final String title;
+        final String file;
+        final String fullFilePath;
         final ArrayList<String> classes;
         
-        public DocumentGroup(String title, ArrayList<String> classes) {
+        public DocumentGroup(String title, String file, String fullFilePath, ArrayList<String> classes) {
             this.title = title;
+            this.file = file;
             this.classes = classes;
+            this.fullFilePath = fullFilePath;
         }
         
         public String getTitle() {
             return this.title;
+        }
+        
+        public String getFile() {
+            return this.file;
+        }
+        
+        public String getFullFilePath() {
+            return this.fullFilePath;
         }
         
         public ArrayList<String> getClasses() {
@@ -61,6 +73,7 @@ public class Options {
         public String toString() {
             boolean first = true;
             String result = this.title;
+            // result += " [" + this.fullFilePath + "] ";
             
             for ( String entry : classes ) {
                 if ( first ) {
@@ -81,8 +94,9 @@ public class Options {
         }
     }
     
-    public static final String KEY_OUTPUT_FILE = "-outputfile";
+    public static final String KEY_MAIN_FILE = "-mainfile";
     public static final String KEY_OUTPUT_DIR = "-outputdir";
+    public static final String KEY_FILE_SUFFIX = "-filesuffix";
     public static final String KEY_INCLUDE_DIR = "-includedir";
     public static final String KEY_LAYOUT_DIR = "-layoutdir";
     public static final String KEY_DOCUMENT_TITLE = "-doctitle";
@@ -105,8 +119,9 @@ public class Options {
     private static final String WS = " ";
     private static final String BROPEN = "(";
     private static final String BRCLOSE = ")";
-    private static final String DEFAULT_OUTPUT_FILE = "output.md";
+    private static final String DEFAULT_MAIN_FILE = "index";
     private static final String DEFAULT_OUTPUT_DIR = ".";
+    private static final String DEFAULT_FILE_SUFFIX = ".md";
     private static final String DEFAULT_INCLUDE_DIR = "./include";
     private static final String DEFAULT_LAYOUT_DIR = "./layouts/markdown";
     private static final String DEFAULT_DOCUMENT_TITLE = "Documentation";
@@ -125,8 +140,9 @@ public class Options {
     
     static {
         Options.optionToOptionLength = new HashMap<String, Integer>();
-        Options.optionToOptionLength.put(KEY_OUTPUT_FILE, 2);
+        Options.optionToOptionLength.put(KEY_MAIN_FILE, 2);
         Options.optionToOptionLength.put(KEY_OUTPUT_DIR, 2);
+        Options.optionToOptionLength.put(KEY_FILE_SUFFIX, 2);
         Options.optionToOptionLength.put(KEY_INCLUDE_DIR, 2);
         Options.optionToOptionLength.put(KEY_LAYOUT_DIR, 2);
         Options.optionToOptionLength.put(KEY_DOCUMENT_TITLE, 2);
@@ -142,14 +158,15 @@ public class Options {
         Options.optionToOptionLength.put(KEY_OMMIT_VOID_RETURN_TYPE, 1);
     }
     
-    private String outputFile = DEFAULT_OUTPUT_FILE;
+    private String mainFile = DEFAULT_MAIN_FILE;
     private String outputDir = DEFAULT_OUTPUT_DIR;
+    private String fileSuffix = DEFAULT_FILE_SUFFIX;
     private String includeDir = DEFAULT_INCLUDE_DIR;
     private String layoutDir = DEFAULT_LAYOUT_DIR;
     private String documentTitle = DEFAULT_DOCUMENT_TITLE;
     private String documentHeader = DEFAULT_DOCUMENT_HEADER;
     private Visibility minimumVisibility = DEFAULT_MINIMUM_VISIBILITY;
-    private String fullOutputFilePath = FileUtils.appendToPath(DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_FILE);
+    private String fullMainFilePath = FileUtils.appendToPath(DEFAULT_OUTPUT_DIR, DEFAULT_MAIN_FILE + DEFAULT_FILE_SUFFIX);
     private boolean noEnums = DEFAULT_NO_ENUMS;
     private boolean noInterfaces = DEFAULT_NO_INTERFACES;
     private boolean noNestedClasses = DEFAULT_NO_NESTED_CLASSES;
@@ -179,13 +196,17 @@ public class Options {
     }
     
     public void parseCommandLine(String[][] options) {
+        String groups = "";
+        
         for (int i = 0; i < options.length; i++) {
             String[] option = options[i];
             
-            if ( option[0].equals(KEY_OUTPUT_FILE) ) {
-                this.outputFile = option[1];
+            if ( option[0].equals(KEY_MAIN_FILE) ) {
+                this.mainFile = option[1];
             } else if ( option[0].equals(KEY_OUTPUT_DIR) ) {
                 this.outputDir = option[1];
+            } else if ( option[0].equals(KEY_FILE_SUFFIX) ) {
+                this.fileSuffix = option[1];
             } else if ( option[0].equals(KEY_INCLUDE_DIR) ) {
                 this.includeDir = option[1];
             } else if ( option[0].equals(KEY_LAYOUT_DIR) ) {
@@ -199,7 +220,7 @@ public class Options {
             } else if ( option[0].equals(KEY_ANNOTATIONS_TO_BE_REMOVED) ) {
                 this.parseAnnotationsToBeRemoved(option[1]);
             } else if ( option[0].equals(KEY_DOCUMENT_GROUPS) ) {
-                this.parseDocumentGroups(option[1]);
+                groups = option[1];
             } else if ( option[0].equals(KEY_NO_ENUMS) ) {
                 this.noEnums = true;
             } else if ( option[0].equals(KEY_NO_INTERFACES) ) {
@@ -215,7 +236,8 @@ public class Options {
             }
         }
         
-        this.fullOutputFilePath = FileUtils.appendToPath(this.outputDir, this.outputFile);
+        this.fullMainFilePath = this.generateFullFilename(this.mainFile);
+        this.parseDocumentGroups(groups);
     }
     
     private void parseAnnotationsToBeRemoved(String input) {
@@ -248,16 +270,26 @@ public class Options {
                 array.add(entry);
             }
             
-            this.documentGroups.put(title, new DocumentGroup(title, array));
+            String fullFilePath = this.generateFullFilename(title);
+            String filePath = title + this.fileSuffix;
+            this.documentGroups.put(title, new DocumentGroup(title, filePath, fullFilePath, array));
         }
     }
     
-    public String getOutputFile() {
-        return this.outputFile;
+    public String getMainFile() {
+        return this.mainFile;
     }
     
     public String getOutputDir() {
         return this.outputDir;
+    }
+    
+    public String getFileSuffix() {
+        return this.fileSuffix;
+    }
+    
+    public String generateFullFilename(String filename) {
+        return FileUtils.appendToPath(this.outputDir, filename + this.fileSuffix);
     }
     
     public String getIncludeDir() {
@@ -276,8 +308,8 @@ public class Options {
         return this.documentHeader;
     }
     
-    public String getFullOutputFilePath() {
-        return this.fullOutputFilePath;
+    public String getFullMainFilePath() {
+        return this.fullMainFilePath;
     }
     
     public Visibility getMinimumVisibility() {
@@ -316,12 +348,23 @@ public class Options {
         return this.documentGroups;
     }
     
+    public DocumentGroup findGroupForClass(String className) {
+        for ( DocumentGroup group : this.documentGroups.values() ) {
+            if ( group.getClasses().contains(className) ) {
+                return group;
+            }
+        }
+        
+        return null;
+    }
+    
     @Override
     public String toString() {
         String result = "Options:";
-        result += LF + "outputFile = " + this.outputFile;
+        result += LF + "mainFile = " + this.mainFile;
         result += LF + "outputDir = " + this.outputDir;
-        result += LF + "fullOutputFilePath = " + this.fullOutputFilePath;
+        result += LF + "fileSuffix = " + this.fileSuffix;
+        result += LF + "fullMainFilePath = " + this.fullMainFilePath;
         result += LF + "documentTitle = " + this.documentTitle;
         result += LF + "documentHeader = " + this.documentHeader;
         result += LF + "minimumVisibility = " + this.minimumVisibility;

@@ -7,7 +7,7 @@ public class MarkdownFormatter implements Formatter {
     private static final String WS = " ";
     private static final String SHARP = "#";
     private static final String CODE_BLOCK = "```";
-    private static final String LINK_FORMAT = "[%s](#%s)";
+    private static final String LINK_FORMAT = "[%s](%s)";
     private static final String ANCHOR_FORMAT = "<a name=\"%s\"> %s </a>";
     private static final String TABLE_HEADER = "---";
     private static final String TABLE_SEPARATOR = "|";

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
+import org.froeschl.mddoclet.Options.DocumentGroup;
 import org.froeschl.mddoclet.formatter.Formatter;
 import org.froeschl.mddoclet.printer.Printer;
 import org.froeschl.mddoclet.utils.FileUtils;
@@ -36,6 +37,7 @@ public class Layouter {
     private static final String LF = "\n";
     private static final String DOT = ".";
     private static final String COMMA = ",";
+    private static final String SHARP = "#";
     private static final String BROPEN = "(";
     private static final String BRCLOSE = ")";
     private static final String INDENT = "    ";
@@ -131,6 +133,8 @@ public class Layouter {
     private Mode mode = Mode.PREPARE;
     private Map<String, String> anchors = new HashMap<String, String>();
     private Map<String, TagInfo> tagInfos = new HashMap<String, TagInfo>();
+    private String currentOutputFile = "";
+    private String currentOutputFileFullPath = "";
     
     public Layouter(Options options, Formatter formatter, Printer printer) {
         if ( formatter == null || printer == null ) {
@@ -144,6 +148,8 @@ public class Layouter {
         this.tagInfos.put(TAG_AUTHOR, new TagInfo(VAR_HEADER_AUTHOR, VAR_TAG_AUTHOR, LAYOUT_HEADER_AUTHOR));
         this.tagInfos.put(TAG_VERSION, new TagInfo(VAR_HEADER_VERSION, VAR_TAG_VERSION, LAYOUT_HEADER_VERSION));
         this.tagInfos.put(TAG_SINCE, new TagInfo(VAR_HEADER_SINCE, VAR_TAG_SINCE, LAYOUT_HEADER_SINCE));
+        this.currentOutputFile = this.options.getMainFile() + this.options.getFileSuffix();
+        this.currentOutputFileFullPath = this.options.getFullMainFilePath();
     }
     
     public void setMode(Mode mode) {
@@ -156,7 +162,18 @@ public class Layouter {
     
     private void print(String text) {
         if ( this.mode == Mode.PRINT ) {
-            this.printer.print(text);
+            this.printer.print(this.currentOutputFileFullPath, text);
+        }
+    }
+    
+    private void setCurrentOutputFileForClass(String className) {
+        DocumentGroup group = this.options.findGroupForClass(className);
+        if ( group == null ) {
+            this.currentOutputFile = this.options.getMainFile() + this.options.getFileSuffix();
+            this.currentOutputFileFullPath = this.options.getFullMainFilePath();
+        } else {
+            this.currentOutputFile = group.getFile();
+            this.currentOutputFileFullPath = group.getFullFilePath();
         }
     }
     
@@ -176,17 +193,27 @@ public class Layouter {
     }
     
     private String createAnchor(String title, String anchor) {
-        this.anchors.put(anchor, title);
+        String currentOutputFile = new String(this.currentOutputFile);
+        this.anchors.put(anchor, currentOutputFile);
         return this.formatter.anchor(title, anchor);
     }
     
     private String createLinkIfAnchorExists(String title, String anchor) {
         String link = "";
-        String label = this.anchors.get(anchor);
-        if ( label == null ) {
+        String anchorOutputFile = this.anchors.get(anchor);
+        
+        if ( anchorOutputFile == null ) {
             link = title;
         } else {
-            link = this.formatter.link(title, anchor);
+            String fullAnchor = null;
+            
+            if ( anchorOutputFile.equals(this.currentOutputFile) ) {
+                fullAnchor = SHARP + anchor;
+            } else {
+                fullAnchor = anchorOutputFile + SHARP + anchor;
+            }
+            
+            link = this.formatter.link(title, fullAnchor);
         }
         
         return link;
@@ -291,6 +318,7 @@ public class Layouter {
     }
     
     public void printClassDescription(ClassDoc classDoc) {
+        this.setCurrentOutputFileForClass(classDoc.name());
         String layout = this.loadLayoutFile(LAYOUT_CLASS_DESCRIPTION);
         
         if ( layout.contains(VAR_CLASS_TITLE) ) {
