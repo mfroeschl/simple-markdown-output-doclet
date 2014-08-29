@@ -329,20 +329,6 @@ public class Layouter {
         }
     }
     
-    /*
-    public void printDocumentTitleAndHeader() {
-        Date date = new Date();
-        SimpleDateFormat dateFormatter = new SimpleDateFormat();
-        dateFormatter.applyPattern("yyyy-MM-dd");
-        
-        String layoutedText = this.formatter.heading(this.options.getDocumentTitle(), Formatter.HEADING_TITLE);
-        layoutedText += this.formatter.paragraph(LAST_UPDATED + WS + dateFormatter.format(date));
-        layoutedText += this.formatter.horizontalRule();
-        layoutedText += this.includeFile(this.options.getDocumentHeader()); 
-        this.print(layoutedText);
-    }
-    */
-    
     public void printGroupList() {
         if ( this.documentGroups.size() == 0 ) {
             if ( this.options.getOmmitEmptySections() ) {

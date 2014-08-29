@@ -46,7 +46,6 @@ public class Options {
     public static final String KEY_INCLUDE_DIR = "-includedir";
     public static final String KEY_LAYOUT_DIR = "-layoutdir";
     public static final String KEY_DOCUMENT_TITLE = "-doctitle";
-    public static final String KEY_DOCUMENT_HEADER = "-header";
     public static final String KEY_MINIMUM_VISIBILITY = "-visibility";
     public static final String KEY_NO_INTERFACES = "-nointerfaces";
     public static final String KEY_NO_ENUMS = "-noenums";
@@ -65,7 +64,6 @@ public class Options {
     private static final String DEFAULT_INCLUDE_DIR = "./include";
     private static final String DEFAULT_LAYOUT_DIR = "./layouts/markdown";
     private static final String DEFAULT_DOCUMENT_TITLE = "Documentation";
-    private static final String DEFAULT_DOCUMENT_HEADER = "";
     private static final Visibility DEFAULT_MINIMUM_VISIBILITY = Visibility.PUBLIC;
     private static final boolean DEFAULT_NO_ENUMS = false;
     private static final boolean DEFAULT_NO_INTERFACES = false;
@@ -85,7 +83,6 @@ public class Options {
         Options.optionToOptionLength.put(KEY_INCLUDE_DIR, 2);
         Options.optionToOptionLength.put(KEY_LAYOUT_DIR, 2);
         Options.optionToOptionLength.put(KEY_DOCUMENT_TITLE, 2);
-        Options.optionToOptionLength.put(KEY_DOCUMENT_HEADER, 2);
         Options.optionToOptionLength.put(KEY_MINIMUM_VISIBILITY, 2);
         Options.optionToOptionLength.put(KEY_ANNOTATIONS_TO_BE_REMOVED, 2);
         Options.optionToOptionLength.put(KEY_NO_ENUMS, 1);
@@ -102,7 +99,6 @@ public class Options {
     private String includeDir = DEFAULT_INCLUDE_DIR;
     private String layoutDir = DEFAULT_LAYOUT_DIR;
     private String documentTitle = DEFAULT_DOCUMENT_TITLE;
-    private String documentHeader = DEFAULT_DOCUMENT_HEADER;
     private Visibility minimumVisibility = DEFAULT_MINIMUM_VISIBILITY;
     private boolean noEnums = DEFAULT_NO_ENUMS;
     private boolean noInterfaces = DEFAULT_NO_INTERFACES;
@@ -148,8 +144,6 @@ public class Options {
                 this.layoutDir = option[1];
             } else if ( option[0].equals(KEY_DOCUMENT_TITLE) ) {
                 this.documentTitle = option[1];
-            } else if ( option[0].equals(KEY_DOCUMENT_HEADER) ) {
-                this.documentHeader = option[1];
             } else if ( option[0].equals(KEY_MINIMUM_VISIBILITY) ) {
                 this.minimumVisibility = Visibility.fromString(option[1]);
             } else if ( option[0].equals(KEY_ANNOTATIONS_TO_BE_REMOVED) ) {
@@ -208,10 +202,6 @@ public class Options {
         return this.documentTitle;
     }
     
-    public String getDocumentHeader() {
-        return this.documentHeader;
-    }
-    
     public Visibility getMinimumVisibility() {
         return this.minimumVisibility;
     }
@@ -251,7 +241,6 @@ public class Options {
         result += LF + "outputDir = " + this.outputDir;
         result += LF + "fileSuffix = " + this.fileSuffix;
         result += LF + "documentTitle = " + this.documentTitle;
-        result += LF + "documentHeader = " + this.documentHeader;
         result += LF + "minimumVisibility = " + this.minimumVisibility;
         result += LF + "noEnums = " + this.noEnums;
         result += LF + "noInterfaces = " + this.noInterfaces;
