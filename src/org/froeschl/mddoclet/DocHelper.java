@@ -10,7 +10,18 @@ import com.sun.javadoc.Tag;
 
 public class DocHelper {
     private static final String HIDDEN_TAG = "@hidden";
+    private static final String GROUP_TAG = "@group";
     private static final String ENUM_CLASS_NAME = "Enum";
+    
+    public static String getGroupName(ClassDoc classDoc, String defaultGroupName) {
+        for ( Tag tag : classDoc.tags() ) {
+            if ( tag.name().equals(GROUP_TAG) ) {
+                return tag.text();
+            }
+        }
+        
+        return defaultGroupName;
+    }
     
     public static boolean isHidden(ProgramElementDoc element) {
         for ( Tag tag : element.tags() ) {

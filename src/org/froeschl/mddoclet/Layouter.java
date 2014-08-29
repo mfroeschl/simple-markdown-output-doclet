@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
-import org.froeschl.mddoclet.Options.DocumentGroup;
 import org.froeschl.mddoclet.formatter.Formatter;
 import org.froeschl.mddoclet.printer.Printer;
 import org.froeschl.mddoclet.utils.FileUtils;
@@ -108,7 +107,6 @@ public class Layouter {
     private static final String HEADING_ENUM = "Enum";
     private static final String HEADING_INTERFACE = "Interface";
     private static final String EMPTY_BODY = "-";
-    private static final String LAST_UPDATED = "Last updated";
     private static final String EXTENDS = "extends";
     private static final String IMPLEMENTS = "implements";
     private static final String ENUM = "enum";
@@ -142,6 +140,7 @@ public class Layouter {
     private Mode mode = Mode.PREPARE;
     private Map<String, String> anchors = new HashMap<String, String>();
     private Map<String, TagInfo> tagInfos = new HashMap<String, TagInfo>();
+    private Map<String, DocumentGroup> documentGroups = new HashMap<String, DocumentGroup>();
     private String currentOutputFile = "";
     private String currentOutputFileFullPath = "";
     
@@ -157,8 +156,6 @@ public class Layouter {
         this.tagInfos.put(TAG_AUTHOR, new TagInfo(VAR_HEADER_AUTHOR, VAR_TAG_AUTHOR, LAYOUT_HEADER_AUTHOR));
         this.tagInfos.put(TAG_VERSION, new TagInfo(VAR_HEADER_VERSION, VAR_TAG_VERSION, LAYOUT_HEADER_VERSION));
         this.tagInfos.put(TAG_SINCE, new TagInfo(VAR_HEADER_SINCE, VAR_TAG_SINCE, LAYOUT_HEADER_SINCE));
-        this.currentOutputFile = this.options.getMainFile() + this.options.getFileSuffix();
-        this.currentOutputFileFullPath = this.options.getFullMainFilePath();
     }
     
     public void setMode(Mode mode) {
@@ -175,15 +172,42 @@ public class Layouter {
         }
     }
     
+    private DocumentGroup getGroupForClass(String className) {
+        for ( DocumentGroup group : this.documentGroups.values() ) {
+            if ( group.contains(className) ) {
+                return group;
+            }
+        }
+        
+        return null;
+    }
+    
+    private DocumentGroup getDefaultGroup() {
+        for ( DocumentGroup group : this.documentGroups.values() ) {
+            if ( group.isDefault() ) {
+                return group;
+            }
+        }
+        
+        return null;
+    }
+    
     private void setCurrentOutputFileForClass(String className) {
-        DocumentGroup group = this.options.findGroupForClass(className);
+        DocumentGroup group = this.getGroupForClass(className);
+        DocumentGroup defaultGroup = this.getDefaultGroup();
+        
         if ( group == null ) {
-            this.currentOutputFile = this.options.getMainFile() + this.options.getFileSuffix();
-            this.currentOutputFileFullPath = this.options.getFullMainFilePath();
+            this.currentOutputFile = defaultGroup.getFile();
+            this.currentOutputFileFullPath = defaultGroup.getFullFilePath();
         } else {
             this.currentOutputFile = group.getFile();
             this.currentOutputFileFullPath = group.getFullFilePath();
         }
+    }
+    
+    private void setDefaultOutputFiles() {
+        this.currentOutputFile = this.getDefaultGroup().getFile();
+        this.currentOutputFileFullPath = this.getDefaultGroup().getFullFilePath();
     }
     
     private static String toSingleLine(String string) {
@@ -202,7 +226,7 @@ public class Layouter {
     }
     
     private void createGroupAnchors() {
-        for ( DocumentGroup group : this.options.getDocumentGroups().values() ) {
+        for ( DocumentGroup group : this.documentGroups.values() ) {
             this.anchors.put(group.getFile(), group.getFile());
         }
     }
@@ -266,6 +290,46 @@ public class Layouter {
         return "";
     }
     
+    public void parseGroups(List<ClassDoc> classes) {
+        // add default group
+        String defaultGroupName = this.options.getDefaultDocumentGroup();
+        String defaultGroupFullFilePath = this.options.generateFullFilename(defaultGroupName);
+        String defaultGroupFilePath = defaultGroupName + this.options.getFileSuffix();
+        DocumentGroup defaultGroup = new DocumentGroup(defaultGroupName, defaultGroupFilePath, defaultGroupFullFilePath, true);
+        this.documentGroups.put(defaultGroupName, defaultGroup);
+        
+        // parse all other groups
+        for ( ClassDoc classDoc : classes ) {
+            String groupName = DocHelper.getGroupName(classDoc, this.options.getDefaultDocumentGroup());
+            DocumentGroup group = this.documentGroups.get(groupName);
+            
+            if ( group == null ) {
+                String fullFilePath = this.options.generateFullFilename(groupName);
+                String filePath = groupName + this.options.getFileSuffix();
+                group = new DocumentGroup(groupName, filePath, fullFilePath, false);
+                this.documentGroups.put(groupName, group);
+            }
+            
+            group.addClass(classDoc.name());
+        }
+        
+        System.out.println("Groups: {");
+        for ( DocumentGroup group : this.documentGroups.values() ) {
+            System.out.println("    " + group.toString() + ",");
+        }
+        System.out.println("}");
+        System.out.println("");
+        
+        this.setDefaultOutputFiles();
+    }
+    
+    public void deleteGroupFiles() {
+        for ( DocumentGroup group : this.documentGroups.values() ) {
+            FileUtils.deleteFileOrFolder(group.fullFilePath);
+        }
+    }
+    
+    /*
     public void printDocumentTitleAndHeader() {
         Date date = new Date();
         SimpleDateFormat dateFormatter = new SimpleDateFormat();
@@ -277,21 +341,23 @@ public class Layouter {
         layoutedText += this.includeFile(this.options.getDocumentHeader()); 
         this.print(layoutedText);
     }
+    */
     
     public void printGroupList() {
-        if ( this.options.getDocumentGroups().size() == 0 ) {
+        if ( this.documentGroups.size() == 0 ) {
             if ( this.options.getOmmitEmptySections() ) {
                 return;
             }
         }
         
+        this.setDefaultOutputFiles();
         this.createGroupAnchors();
         
         String layout = this.loadLayoutFile(LAYOUT_GROUP_LIST);
         String header = "";
         String items = "";
         
-        if ( this.options.getDocumentGroups().size() > 0 ) {
+        if ( this.documentGroups.size() > 0 ) {
             header = this.loadLayoutFile(LAYOUT_GROUP_LIST_ITEMS_HEADER);
             items = this.createGroupListItems();
         } else {
@@ -314,7 +380,7 @@ public class Layouter {
         String itemLayout = this.loadLayoutFile(LAYOUT_GROUP_LIST_ITEM);
         String classListItems = "";
         
-        for ( DocumentGroup group : this.options.getDocumentGroups().values() ) {
+        for ( DocumentGroup group : this.documentGroups.values() ) {
             String item = itemLayout;
             if ( item.contains(VAR_GROUP_TITLE) ) {
                 item = item.replace(VAR_GROUP_TITLE, this.createLinkIfAnchorExists(group.getTitle(), group.getFile()));
@@ -334,7 +400,7 @@ public class Layouter {
         dateFormatter.applyPattern("yyyy-MM-dd");
         String dateText = dateFormatter.format(date);
         
-        for ( DocumentGroup group : this.options.getDocumentGroups().values() ) {
+        for ( DocumentGroup group : this.documentGroups.values() ) {
             this.currentOutputFileFullPath = group.getFullFilePath();
             this.currentOutputFile = group.getFile();
             
@@ -355,7 +421,7 @@ public class Layouter {
         String currentOutputFileFullPath = this.currentOutputFileFullPath;
         String currentOutputFile = this.currentOutputFile;
         
-        for ( DocumentGroup group : this.options.getDocumentGroups().values() ) {
+        for ( DocumentGroup group : this.documentGroups.values() ) {
             if ( group.getClasses().size() == 0 ) {
                 if ( this.options.getOmmitEmptySections() ) {
                     return;
