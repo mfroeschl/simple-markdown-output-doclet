@@ -352,40 +352,55 @@ public class Layouter {
     }
     
     public void printClassList(List<ClassDoc> classes) {
-        if ( classes.size() == 0 ) {
-            if ( this.options.getOmmitEmptySections() ) {
-                return;
+        String currentOutputFileFullPath = this.currentOutputFileFullPath;
+        String currentOutputFile = this.currentOutputFile;
+        
+        for ( DocumentGroup group : this.options.getDocumentGroups().values() ) {
+            if ( group.getClasses().size() == 0 ) {
+                if ( this.options.getOmmitEmptySections() ) {
+                    return;
+                }
             }
+            
+            this.currentOutputFileFullPath = group.getFullFilePath();
+            this.currentOutputFile = group.getFile();
+            
+            String layout = this.loadLayoutFile(LAYOUT_CLASS_LIST);
+            String header = "";
+            String items = "";
+            
+            if ( classes.size() > 0 ) {
+                header = this.loadLayoutFile(LAYOUT_CLASS_LIST_ITEMS_HEADER);
+                items = this.createClassListItemsForGroup(classes, group);
+            } else {
+                header = this.loadLayoutFile(LAYOUT_EMPTY_LIST);
+                items = "";
+            }
+            
+            if ( layout.contains(VAR_CLASS_LIST_ITEMS_HEADER) ) {
+                layout = layout.replace(VAR_CLASS_LIST_ITEMS_HEADER, header);
+            }
+            
+            if ( layout.contains(VAR_CLASS_LIST_ITEMS) ) {
+                layout = layout.replace(VAR_CLASS_LIST_ITEMS, items);
+            }
+            
+            this.print(layout);
         }
         
-        String layout = this.loadLayoutFile(LAYOUT_CLASS_LIST);
-        String header = "";
-        String items = "";
-        
-        if ( classes.size() > 0 ) {
-            header = this.loadLayoutFile(LAYOUT_CLASS_LIST_ITEMS_HEADER);
-            items = this.createClassListItems(classes);
-        } else {
-            header = this.loadLayoutFile(LAYOUT_EMPTY_LIST);
-            items = "";
-        }
-        
-        if ( layout.contains(VAR_CLASS_LIST_ITEMS_HEADER) ) {
-            layout = layout.replace(VAR_CLASS_LIST_ITEMS_HEADER, header);
-        }
-        
-        if ( layout.contains(VAR_CLASS_LIST_ITEMS) ) {
-            layout = layout.replace(VAR_CLASS_LIST_ITEMS, items);
-        }
-        
-        this.print(layout);
+        this.currentOutputFileFullPath = currentOutputFileFullPath;
+        this.currentOutputFile = currentOutputFile;
     }
     
-    private String createClassListItems(List<ClassDoc> classes) {
+    private String createClassListItemsForGroup(List<ClassDoc> classes, DocumentGroup group) {
         String itemLayout = this.loadLayoutFile(LAYOUT_CLASS_LIST_ITEM);
         String classListItems = "";
         
         for ( ClassDoc classDoc : classes ) {
+            if ( group != null && !group.contains(classDoc.name()) ) {
+                continue;
+            }
+            
             String item = itemLayout;
             if ( item.contains(VAR_CLASS_LINK) ) {
                 item = item.replace(VAR_CLASS_LINK, this.createLinkIfAnchorExists(classDoc.name(), classDoc.qualifiedName()));

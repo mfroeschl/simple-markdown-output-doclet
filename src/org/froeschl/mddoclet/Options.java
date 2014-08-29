@@ -69,6 +69,16 @@ public class Options {
             return this.classes;
         }
         
+        public boolean contains(String className) {
+            for ( String entry : this.classes ) {
+                if ( entry.equals(className) ) {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        
         @Override
         public String toString() {
             boolean first = true;
