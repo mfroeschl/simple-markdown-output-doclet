@@ -40,6 +40,47 @@ public class Options {
         }
     }
     
+    public class DocumentGroup {
+        final String title;
+        final ArrayList<String> classes;
+        
+        public DocumentGroup(String title, ArrayList<String> classes) {
+            this.title = title;
+            this.classes = classes;
+        }
+        
+        public String getTitle() {
+            return this.title;
+        }
+        
+        public ArrayList<String> getClasses() {
+            return this.classes;
+        }
+        
+        @Override
+        public String toString() {
+            boolean first = true;
+            String result = this.title;
+            
+            for ( String entry : classes ) {
+                if ( first ) {
+                    first = false;
+                    result += BROPEN;
+                } else {
+                    result += COMMA + WS;
+                }
+                
+                result += entry;
+            }
+            
+            if ( this.classes.size() > 0 ) {
+                result += BRCLOSE;
+            }
+            
+            return result;
+        }
+    }
+    
     public static final String KEY_OUTPUT_FILE = "-outputfile";
     public static final String KEY_OUTPUT_DIR = "-outputdir";
     public static final String KEY_INCLUDE_DIR = "-includedir";
@@ -54,10 +95,16 @@ public class Options {
     public static final String KEY_OMMIT_EMPTY_SECTIONS = "-ommitempty";
     public static final String KEY_OMMIT_VOID_RETURN_TYPE = "-ommitvoid";
     public static final String KEY_ANNOTATIONS_TO_BE_REMOVED = "-removeannotations";
+    public static final String KEY_DOCUMENT_GROUPS = "-groups";
     
     private static final String LF = "\n";
     private static final String INDENT = "    ";
     private static final String COMMA = ",";
+    private static final String COLON = ":";
+    private static final String SEMICOLON = ";";
+    private static final String WS = " ";
+    private static final String BROPEN = "(";
+    private static final String BRCLOSE = ")";
     private static final String DEFAULT_OUTPUT_FILE = "output.md";
     private static final String DEFAULT_OUTPUT_DIR = ".";
     private static final String DEFAULT_INCLUDE_DIR = "./include";
@@ -71,7 +118,8 @@ public class Options {
     private static final boolean DEFAULT_INCLUDE_HIDDEN = false;
     private static final boolean DEFAULT_OMMIT_EMPTY_SECTIONS = false;
     private static final boolean DEFAULT_OMMIT_VOID_RETURN_TYPE = false;
-    private static final List<String> DEFAULT_ANNOTATIONS_TO_BE_REMOVED = new ArrayList<String>();;
+    private static final ArrayList<String> DEFAULT_ANNOTATIONS_TO_BE_REMOVED = new ArrayList<String>();
+    private static final HashMap<String, DocumentGroup> DEFAULT_DOCUMENT_GROUPS = new HashMap<String, DocumentGroup>();
     
     public static Map<String, Integer> optionToOptionLength;
     
@@ -85,6 +133,7 @@ public class Options {
         Options.optionToOptionLength.put(KEY_DOCUMENT_HEADER, 2);
         Options.optionToOptionLength.put(KEY_MINIMUM_VISIBILITY, 2);
         Options.optionToOptionLength.put(KEY_ANNOTATIONS_TO_BE_REMOVED, 2);
+        Options.optionToOptionLength.put(KEY_DOCUMENT_GROUPS, 2);
         Options.optionToOptionLength.put(KEY_NO_ENUMS, 1);
         Options.optionToOptionLength.put(KEY_NO_INTERFACES, 1);
         Options.optionToOptionLength.put(KEY_NO_NESTED_CLASSES, 1);
@@ -107,7 +156,8 @@ public class Options {
     private boolean includeHidden = DEFAULT_INCLUDE_HIDDEN;
     private boolean ommitEmptySections = DEFAULT_OMMIT_EMPTY_SECTIONS;
     private boolean ommitVoidReturnType = DEFAULT_OMMIT_VOID_RETURN_TYPE;
-    private List<String> annotationsToBeRemoved = DEFAULT_ANNOTATIONS_TO_BE_REMOVED;
+    private ArrayList<String> annotationsToBeRemoved = DEFAULT_ANNOTATIONS_TO_BE_REMOVED;
+    private HashMap<String, DocumentGroup> documentGroups = DEFAULT_DOCUMENT_GROUPS;
     
     private Options() {
     }
@@ -148,6 +198,8 @@ public class Options {
                 this.minimumVisibility = Visibility.fromString(option[1]);
             } else if ( option[0].equals(KEY_ANNOTATIONS_TO_BE_REMOVED) ) {
                 this.parseAnnotationsToBeRemoved(option[1]);
+            } else if ( option[0].equals(KEY_DOCUMENT_GROUPS) ) {
+                this.parseDocumentGroups(option[1]);
             } else if ( option[0].equals(KEY_NO_ENUMS) ) {
                 this.noEnums = true;
             } else if ( option[0].equals(KEY_NO_INTERFACES) ) {
@@ -168,11 +220,35 @@ public class Options {
     
     private void parseAnnotationsToBeRemoved(String input) {
         this.annotationsToBeRemoved.clear();
-        String[] annotations = input.split(",");
+        String[] annotations = input.split(COMMA);
         for ( String annotation : annotations ) {
             if ( !annotation.isEmpty() )  {
                 this.annotationsToBeRemoved.add(annotation);
             }
+        }
+    }
+    
+    private void parseDocumentGroups(String input) {
+        this.documentGroups.clear();
+        String[] groups = input.split(SEMICOLON);
+        
+        for ( String group : groups ) {
+            String[] parts = group.split(COLON);
+            
+            if ( parts == null || parts.length != 2 || parts[0].isEmpty() || parts[1].isEmpty() ) {
+                System.out.println("Invalid documentGroup: \"" + group + "\"");
+                continue;
+            }
+            
+            String title = parts[0];
+            String[] classes = parts[1].split(COMMA);
+            ArrayList<String> array = new ArrayList<String>();
+            
+            for ( String entry : classes ) {
+                array.add(entry);
+            }
+            
+            this.documentGroups.put(title, new DocumentGroup(title, array));
         }
     }
     
@@ -236,6 +312,10 @@ public class Options {
         return this.annotationsToBeRemoved;
     }
     
+    public HashMap<String, DocumentGroup> getDocumentGroups() {
+        return this.documentGroups;
+    }
+    
     @Override
     public String toString() {
         String result = "Options:";
@@ -257,6 +337,20 @@ public class Options {
             if ( i < this.annotationsToBeRemoved.size() - 1 ) {
                 result += COMMA;
             }
+        }
+        
+        result += LF + "}";
+        result += LF + "documentGroups = {";
+        
+        int i = 0;
+        for ( DocumentGroup group : this.documentGroups.values() ) {
+            result += LF + INDENT + group.toString();
+            
+            if ( i < this.documentGroups.size() - 1 ) {
+                result += COMMA;
+            }
+            
+            ++i;
         }
         
         result += LF + "}";
