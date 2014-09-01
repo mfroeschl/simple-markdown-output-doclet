@@ -2,6 +2,8 @@ package org.froeschl.mddoclet;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.froeschl.mddoclet.Layouter.Mode;
@@ -22,6 +24,13 @@ import com.sun.javadoc.RootDoc;
 public class Editor {
     final private Layouter layouter;
     final private Options options;
+    
+    private class ProgramElementDocComparator implements Comparator<ProgramElementDoc> {
+        @Override
+        public int compare(ProgramElementDoc o1, ProgramElementDoc o2) {
+            return o1.name().compareTo(o2.name());
+        }
+    }
     
     public Editor(Options options, Formatter formatter, Printer printer) {
         if ( options == null || formatter == null || printer == null ) {
@@ -144,6 +153,10 @@ public class Editor {
             filteredClasses.add(classes[i]);
         }
         
+        if ( this.options.getSortClasses() ) {
+            Collections.sort(filteredClasses, new ProgramElementDocComparator());
+        }
+        
         return filteredClasses;
     }
     
@@ -162,6 +175,10 @@ public class Editor {
             filteredMethods.add(methods[i]);
         }
         
+        if ( this.options.getSortMethods() ) {
+            Collections.sort(filteredMethods, new ProgramElementDocComparator());
+        }
+        
         return filteredMethods;
     }
     
@@ -178,6 +195,10 @@ public class Editor {
             }
             
             filteredFields.add(fields[i]);
+        }
+        
+        if ( this.options.getSortMethods() ) {
+            Collections.sort(filteredFields, new ProgramElementDocComparator());
         }
         
         return filteredFields;

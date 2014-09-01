@@ -64,6 +64,10 @@ public class Options {
     public static final String KEY_INCLUDE_HIDDEN = "-includehidden";
     public static final String KEY_OMMIT_EMPTY_SECTIONS = "-ommitempty";
     public static final String KEY_OMMIT_VOID_RETURN_TYPE = "-ommitvoid";
+    public static final String KEY_SORT_GROUPS = "-sortgroups";
+    public static final String KEY_SORT_CLASSES = "-sortclasses";
+    public static final String KEY_SORT_METHODS = "-sortmethods";
+    public static final String KEY_SORT_FIELDS = "-sortfields";
     public static final String KEY_ANNOTATIONS_TO_BE_REMOVED = "-removeannotations";
     public static final String KEY_GROUP_INFOS = "-groupinfo";
     
@@ -85,6 +89,10 @@ public class Options {
     private static final boolean DEFAULT_INCLUDE_HIDDEN = false;
     private static final boolean DEFAULT_OMMIT_EMPTY_SECTIONS = false;
     private static final boolean DEFAULT_OMMIT_VOID_RETURN_TYPE = false;
+    private static final boolean DEFAULT_SORT_GROUPS = false;
+    private static final boolean DEFAULT_SORT_CLASSES = false;
+    private static final boolean DEFAULT_SORT_METHODS = false;
+    private static final boolean DEFAULT_SORT_FIELDS = false;
     private static final ArrayList<String> DEFAULT_ANNOTATIONS_TO_BE_REMOVED = new ArrayList<String>();
     private static final HashMap<String, GroupInfo> DEFAULT_GROUP_INFOS = new HashMap<String, GroupInfo>();
     
@@ -107,6 +115,10 @@ public class Options {
         Options.optionToOptionLength.put(KEY_INCLUDE_HIDDEN, 1);
         Options.optionToOptionLength.put(KEY_OMMIT_EMPTY_SECTIONS, 1);
         Options.optionToOptionLength.put(KEY_OMMIT_VOID_RETURN_TYPE, 1);
+        Options.optionToOptionLength.put(KEY_SORT_GROUPS, 1);
+        Options.optionToOptionLength.put(KEY_SORT_CLASSES, 1);
+        Options.optionToOptionLength.put(KEY_SORT_METHODS, 1);
+        Options.optionToOptionLength.put(KEY_SORT_FIELDS, 1);
     }
     
     private String defaultDocumentGroup = DEFAULT_DEFAULT_DOCUMENT_GROUP;
@@ -122,6 +134,10 @@ public class Options {
     private boolean includeHidden = DEFAULT_INCLUDE_HIDDEN;
     private boolean ommitEmptySections = DEFAULT_OMMIT_EMPTY_SECTIONS;
     private boolean ommitVoidReturnType = DEFAULT_OMMIT_VOID_RETURN_TYPE;
+    private boolean sortGroups = DEFAULT_SORT_GROUPS;
+    private boolean sortClasses = DEFAULT_SORT_CLASSES;
+    private boolean sortMethods = DEFAULT_SORT_METHODS;
+    private boolean sortFields = DEFAULT_SORT_FIELDS;
     private ArrayList<String> annotationsToBeRemoved = DEFAULT_ANNOTATIONS_TO_BE_REMOVED;
     private HashMap<String, GroupInfo> groupInfos = DEFAULT_GROUP_INFOS;
     
@@ -179,6 +195,14 @@ public class Options {
                 this.ommitEmptySections = true;
             } else if ( option[0].equals(KEY_OMMIT_VOID_RETURN_TYPE) ) {
                 this.ommitVoidReturnType = true;
+            } else if ( option[0].equals(KEY_SORT_GROUPS) ) {
+                this.sortGroups = true;
+            } else if ( option[0].equals(KEY_SORT_CLASSES) ) {
+                this.sortClasses = true;
+            } else if ( option[0].equals(KEY_SORT_METHODS) ) {
+                this.sortMethods = true;
+            } else if ( option[0].equals(KEY_SORT_FIELDS) ) {
+                this.sortFields = true;
             }
         }
     }
@@ -271,6 +295,22 @@ public class Options {
         return this.ommitVoidReturnType;
     }
     
+    public boolean getSortGroups() {
+        return this.sortGroups;
+    }
+    
+    public boolean getSortClasses() {
+        return this.sortClasses;
+    }
+    
+    public boolean getSortMethods() {
+        return this.sortMethods;
+    }
+    
+    public boolean getSortFields() {
+        return this.sortFields;
+    }
+    
     public List<String> getAnnotationsToBeRemoved() {
         return this.annotationsToBeRemoved;
     }
@@ -308,6 +348,11 @@ public class Options {
         result += LF + "noNestedClasses = " + this.noNestedClasses;
         result += LF + "includeHidden = " + this.includeHidden;
         result += LF + "ommitEmptySections = " + this.ommitEmptySections;
+        result += LF + "ommitVoidReturnType = " + this.ommitVoidReturnType;
+        result += LF + "sortGroups = " + this.sortGroups;
+        result += LF + "sortClasses = " + this.sortClasses;
+        result += LF + "sortMethods = " + this.sortMethods;
+        result += LF + "sortFields = " + this.sortFields;
         result += LF + "annotationsToBeRemoved = {";
         
         for ( int i = 0; i < this.annotationsToBeRemoved.size(); i++ ) {

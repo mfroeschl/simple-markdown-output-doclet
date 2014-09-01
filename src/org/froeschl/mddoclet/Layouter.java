@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.security.InvalidParameterException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -132,6 +134,13 @@ public class Layouter {
             this.varHeader = varHeader;
             this.varValue = varValue;
             this.layoutHeader = layoutHeader;
+        }
+    }
+    
+    private class DocumentGroupComparator implements Comparator<DocumentGroup> {
+        @Override
+        public int compare(DocumentGroup o1, DocumentGroup o2) {
+            return o1.getAlias().compareTo(o2.getAlias());
         }
     }
     
@@ -379,7 +388,13 @@ public class Layouter {
         String itemLayout = this.loadLayoutFile(LAYOUT_GROUP_LIST_ITEM);
         String classListItems = "";
         
-        for ( DocumentGroup group : this.documentGroups.values() ) {
+        List<DocumentGroup> values = new ArrayList<DocumentGroup>(this.documentGroups.values());
+        
+        if ( this.options.getSortGroups() ) {
+            Collections.sort(values, new DocumentGroupComparator());
+        }
+        
+        for ( DocumentGroup group : values ) {
             if ( group.isDefault() ) {
                 continue;
             }
