@@ -3,10 +3,12 @@ package org.froeschl.mddoclet;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 
 import org.froeschl.mddoclet.utils.FileUtils;
+
+import com.sun.javadoc.DocErrorReporter;
+import com.sun.media.sound.InvalidFormatException;
 
 public class Options {
     public enum Visibility {
@@ -51,25 +53,38 @@ public class Options {
         }
     }
     
-    public static final String KEY_DEFAULT_DOCUMENT_GROUP = "-defaultGroup";
-    public static final String KEY_OUTPUT_DIR = "-outputdir";
-    public static final String KEY_FILE_SUFFIX = "-filesuffix";
-    public static final String KEY_INCLUDE_DIR = "-includedir";
-    public static final String KEY_LAYOUT_DIR = "-layoutdir";
-    public static final String KEY_DOCUMENT_TITLE = "-doctitle";
-    public static final String KEY_MINIMUM_VISIBILITY = "-visibility";
-    public static final String KEY_NO_INTERFACES = "-nointerfaces";
-    public static final String KEY_NO_ENUMS = "-noenums";
-    public static final String KEY_NO_NESTED_CLASSES = "-nonested";
-    public static final String KEY_INCLUDE_HIDDEN = "-includehidden";
-    public static final String KEY_OMMIT_EMPTY_SECTIONS = "-ommitempty";
-    public static final String KEY_OMMIT_VOID_RETURN_TYPE = "-ommitvoid";
-    public static final String KEY_SORT_GROUPS = "-sortgroups";
-    public static final String KEY_SORT_CLASSES = "-sortclasses";
-    public static final String KEY_SORT_METHODS = "-sortmethods";
-    public static final String KEY_SORT_FIELDS = "-sortfields";
-    public static final String KEY_ANNOTATIONS_TO_BE_REMOVED = "-removeannotations";
-    public static final String KEY_GROUP_INFOS = "-groupinfo";
+    private static class OptionInfo {
+        private final int argumentCount;
+        private final String argument;
+        private final String helpText;
+        
+        public OptionInfo(int argumentCount, String argument, String helpText) {
+            this.argumentCount = argumentCount;
+            this.argument = argument;
+            this.helpText = helpText;
+        }
+    }
+    
+    private static final String KEY_DEFAULT_DOCUMENT_GROUP = "-defaultGroup";
+    private static final String KEY_OUTPUT_DIR = "-outputdir";
+    private static final String KEY_FILE_SUFFIX = "-filesuffix";
+    private static final String KEY_INCLUDE_DIR = "-includedir";
+    private static final String KEY_LAYOUT_DIR = "-layoutdir";
+    private static final String KEY_MINIMUM_VISIBILITY = "-visibility";
+    private static final String KEY_NO_INTERFACES = "-nointerfaces";
+    private static final String KEY_NO_ENUMS = "-noenums";
+    private static final String KEY_NO_NESTED_CLASSES = "-nonested";
+    private static final String KEY_INCLUDE_HIDDEN = "-includehidden";
+    private static final String KEY_OMMIT_EMPTY_SECTIONS = "-ommitempty";
+    private static final String KEY_OMMIT_VOID_RETURN_TYPE = "-ommitvoid";
+    private static final String KEY_SORT_GROUPS = "-sortgroups";
+    private static final String KEY_SORT_CLASSES = "-sortclasses";
+    private static final String KEY_SORT_METHODS = "-sortmethods";
+    private static final String KEY_SORT_FIELDS = "-sortfields";
+    private static final String KEY_SHOW_HELP = "-help";
+    private static final String KEY_ANNOTATIONS_TO_BE_REMOVED = "-removeannotations";
+    private static final String KEY_GROUP_INFOS = "-groupinfo";
+    private static final int INDENT_POSITION = 26;
     
     private static final String LF = "\n";
     private static final String INDENT = "    ";
@@ -81,7 +96,6 @@ public class Options {
     private static final String DEFAULT_FILE_SUFFIX = ".md";
     private static final String DEFAULT_INCLUDE_DIR = "./include";
     private static final String DEFAULT_LAYOUT_DIR = "./layouts/markdown";
-    private static final String DEFAULT_DOCUMENT_TITLE = "Documentation";
     private static final Visibility DEFAULT_MINIMUM_VISIBILITY = Visibility.PUBLIC;
     private static final boolean DEFAULT_NO_ENUMS = false;
     private static final boolean DEFAULT_NO_INTERFACES = false;
@@ -93,32 +107,33 @@ public class Options {
     private static final boolean DEFAULT_SORT_CLASSES = false;
     private static final boolean DEFAULT_SORT_METHODS = false;
     private static final boolean DEFAULT_SORT_FIELDS = false;
+    private static final boolean DEFAULT_SHOW_HELP = false;
     private static final ArrayList<String> DEFAULT_ANNOTATIONS_TO_BE_REMOVED = new ArrayList<String>();
     private static final HashMap<String, GroupInfo> DEFAULT_GROUP_INFOS = new HashMap<String, GroupInfo>();
     
-    public static Map<String, Integer> optionToOptionLength;
+    public static HashMap<String, OptionInfo> options;
     
     static {
-        Options.optionToOptionLength = new HashMap<String, Integer>();
-        Options.optionToOptionLength.put(KEY_DEFAULT_DOCUMENT_GROUP, 2);
-        Options.optionToOptionLength.put(KEY_OUTPUT_DIR, 2);
-        Options.optionToOptionLength.put(KEY_FILE_SUFFIX, 2);
-        Options.optionToOptionLength.put(KEY_INCLUDE_DIR, 2);
-        Options.optionToOptionLength.put(KEY_LAYOUT_DIR, 2);
-        Options.optionToOptionLength.put(KEY_DOCUMENT_TITLE, 2);
-        Options.optionToOptionLength.put(KEY_MINIMUM_VISIBILITY, 2);
-        Options.optionToOptionLength.put(KEY_ANNOTATIONS_TO_BE_REMOVED, 2);
-        Options.optionToOptionLength.put(KEY_GROUP_INFOS, 2);
-        Options.optionToOptionLength.put(KEY_NO_ENUMS, 1);
-        Options.optionToOptionLength.put(KEY_NO_INTERFACES, 1);
-        Options.optionToOptionLength.put(KEY_NO_NESTED_CLASSES, 1);
-        Options.optionToOptionLength.put(KEY_INCLUDE_HIDDEN, 1);
-        Options.optionToOptionLength.put(KEY_OMMIT_EMPTY_SECTIONS, 1);
-        Options.optionToOptionLength.put(KEY_OMMIT_VOID_RETURN_TYPE, 1);
-        Options.optionToOptionLength.put(KEY_SORT_GROUPS, 1);
-        Options.optionToOptionLength.put(KEY_SORT_CLASSES, 1);
-        Options.optionToOptionLength.put(KEY_SORT_METHODS, 1);
-        Options.optionToOptionLength.put(KEY_SORT_FIELDS, 1);
+        Options.options = new HashMap<String, OptionInfo>();
+        Options.options.put(KEY_DEFAULT_DOCUMENT_GROUP, new OptionInfo(2, "<name>", "Name of the default document group."));
+        Options.options.put(KEY_OUTPUT_DIR, new OptionInfo(2, "<path>", "Path to the output directory."));
+        Options.options.put(KEY_FILE_SUFFIX, new OptionInfo(2, "<extension>", "File extension for output files."));
+        Options.options.put(KEY_INCLUDE_DIR, new OptionInfo(2, "<path>", "Path to the input directory."));
+        Options.options.put(KEY_LAYOUT_DIR, new OptionInfo(2, "<path>", "Path to the layout directory."));
+        Options.options.put(KEY_MINIMUM_VISIBILITY, new OptionInfo(2, "<visibility>", "Minimum visibility for elements to be included."));
+        Options.options.put(KEY_ANNOTATIONS_TO_BE_REMOVED, new OptionInfo(2, "<list>", "List of annotations to be removed."));
+        Options.options.put(KEY_GROUP_INFOS, new OptionInfo(2, "<list>", "Semi-colon sepatared list of group infos."));
+        Options.options.put(KEY_NO_ENUMS, new OptionInfo(1, "", "When specified, enums will not be included."));
+        Options.options.put(KEY_NO_INTERFACES, new OptionInfo(1, "", "When specified, interfaces will not be included."));
+        Options.options.put(KEY_NO_NESTED_CLASSES, new OptionInfo(1, "", "When specified, nested classes will not be included."));
+        Options.options.put(KEY_INCLUDE_HIDDEN, new OptionInfo(1, "", "When specified, elements containing \"@hidden'\" tag will not be included."));
+        Options.options.put(KEY_OMMIT_EMPTY_SECTIONS, new OptionInfo(1, "", "When specified, empty document sections will be ommitted."));
+        Options.options.put(KEY_OMMIT_VOID_RETURN_TYPE, new OptionInfo(1, "", "When specified, void return types will not be documented."));
+        Options.options.put(KEY_SORT_GROUPS, new OptionInfo(1, "", "When specified, document groups will be sorted alphabetycally."));
+        Options.options.put(KEY_SORT_CLASSES, new OptionInfo(1, "", "When specified, classes will be sorted alphabetycally."));
+        Options.options.put(KEY_SORT_METHODS, new OptionInfo(1, "", "When specified, methods will be sorted alphabetycally."));
+        Options.options.put(KEY_SORT_FIELDS, new OptionInfo(1, "", "When specified, fields will be sorted alphabetycally."));
+        Options.options.put(KEY_SHOW_HELP, new OptionInfo(1, "", "When specified, displays this help text."));
     }
     
     private String defaultDocumentGroup = DEFAULT_DEFAULT_DOCUMENT_GROUP;
@@ -126,7 +141,6 @@ public class Options {
     private String fileSuffix = DEFAULT_FILE_SUFFIX;
     private String includeDir = DEFAULT_INCLUDE_DIR;
     private String layoutDir = DEFAULT_LAYOUT_DIR;
-    private String documentTitle = DEFAULT_DOCUMENT_TITLE;
     private Visibility minimumVisibility = DEFAULT_MINIMUM_VISIBILITY;
     private boolean noEnums = DEFAULT_NO_ENUMS;
     private boolean noInterfaces = DEFAULT_NO_INTERFACES;
@@ -138,29 +152,74 @@ public class Options {
     private boolean sortClasses = DEFAULT_SORT_CLASSES;
     private boolean sortMethods = DEFAULT_SORT_METHODS;
     private boolean sortFields = DEFAULT_SORT_FIELDS;
+    private boolean showHelp = DEFAULT_SHOW_HELP;
     private ArrayList<String> annotationsToBeRemoved = DEFAULT_ANNOTATIONS_TO_BE_REMOVED;
     private HashMap<String, GroupInfo> groupInfos = DEFAULT_GROUP_INFOS;
     
     private Options() {
     }
     
-    public static Options fromCommandLine(String[][] input) {
+    public static Options fromCommandLine(String[][] input) throws InvalidFormatException {
         Options options = new Options();
         options.parseCommandLine(input);
         return options;
     }
     
     public static int getOptionLength(String option) {
-        Integer length = Options.optionToOptionLength.get(option);
+        OptionInfo optionInfo = Options.options.get(option);
         
-        if ( length == null ) {
+        if ( optionInfo == null ) {
+            return 0;
+        } else if ( KEY_SHOW_HELP.equals(option) ) {
+            System.out.println("Printing options (usage)");
+            Options.printHelp();
             return 0;
         } else {
-            return length;
+            return optionInfo.argumentCount;
         }
     }
     
-    public void parseCommandLine(String[][] options) {
+    public static boolean validOptions(String input[][], 
+            DocErrorReporter reporter) {
+        try {
+            Options options = new Options();
+            options.parseCommandLine(input);
+        } catch ( InvalidFormatException e ) {
+            reporter.printError(e.getMessage());
+            System.out.println("Printing options (format exception)");
+            Options.printHelp();
+            return false;
+        }
+        
+        return true;
+    }
+    
+    public static void printHelp() {
+        System.out.println("MarkdownOutputDoclet options:");
+        for ( Entry<String, OptionInfo> entry : Options.options.entrySet() ) {
+            System.out.println(Options.formatHelpText(entry.getKey(), entry.getValue().argument, entry.getValue().helpText));
+        }
+    }
+    
+    private static String formatHelpText(String option, String argument, String helpText) {
+        boolean hasSpacing = false;
+        String output = option + " " + argument;
+        int missing = INDENT_POSITION - output.length();
+        
+        for ( int i = 0; i < missing; i++ ) {
+            hasSpacing = true;
+            output += " ";
+        }
+        
+        if ( !hasSpacing ) {
+            output += " ";
+        }
+        
+        output += helpText;
+        return output;
+    }
+    
+    public void parseCommandLine(String[][] options) throws InvalidFormatException {
         
         for (int i = 0; i < options.length; i++) {
             String[] option = options[i];
@@ -175,8 +234,6 @@ public class Options {
                 this.includeDir = option[1];
             } else if ( option[0].equals(KEY_LAYOUT_DIR) ) {
                 this.layoutDir = option[1];
-            } else if ( option[0].equals(KEY_DOCUMENT_TITLE) ) {
-                this.documentTitle = option[1];
             } else if ( option[0].equals(KEY_MINIMUM_VISIBILITY) ) {
                 this.minimumVisibility = Visibility.fromString(option[1]);
             } else if ( option[0].equals(KEY_ANNOTATIONS_TO_BE_REMOVED) ) {
@@ -203,36 +260,48 @@ public class Options {
                 this.sortMethods = true;
             } else if ( option[0].equals(KEY_SORT_FIELDS) ) {
                 this.sortFields = true;
+            } else if ( option[0].equals(KEY_SHOW_HELP) ) {
+                this.showHelp = true;
             }
         }
     }
     
-    private void parseAnnotationsToBeRemoved(String input) {
+    private void parseAnnotationsToBeRemoved(String input) throws InvalidFormatException {
         this.annotationsToBeRemoved.clear();
         String[] annotations = input.split(COMMA);
+        
+        if ( annotations.length == 0 ) {
+            throw new InvalidFormatException("No Annotation.\nAnnotations must be specified as a comma separated list. Example: NonNull,Nullable");
+        }
+        
         for ( String annotation : annotations ) {
-            if ( !annotation.isEmpty() )  {
-                this.annotationsToBeRemoved.add(annotation);
+            if ( annotation.isEmpty() ) {
+                throw new InvalidFormatException("Empty Annotation.\nAnnotations must be specified as a comma separated list. Example: NonNull,Nullable");
             }
+            
+            this.annotationsToBeRemoved.add(annotation);
         }
     }
     
-    private void parseGroupInfos(String input) {
+    private void parseGroupInfos(String input) throws InvalidFormatException {
         // Group:Alias:Description;
         
         this.groupInfos.clear();
         
         String[] groups = input.split(SEMICOLON);
+        if ( groups.length == 0 ) {
+            throw new InvalidFormatException("No group infos.\nGroup infos must be specified as a semi-colon separated list of group id, alias and description (divided by colon). Example: MyGroupId:My Group Alias:My Group Description;");
+        }
+        
         for ( String group : groups ) {
             if ( group.isEmpty() ) {
-                continue;
+                throw new InvalidFormatException("Empty group info.\nGroup infos must be specified as a semi-colon separated list of group id, alias and description (divided by colon). Example: MyGroupId:My Group Alias:My Group Description;");
             }
             
             String[] tags = group.split(COLON);
             
             if ( tags.length != 3 || tags[0] == null || tags[0].isEmpty() || tags[1] == null || tags[1].isEmpty() || tags[2] == null || tags[2].isEmpty() ) {
-                System.out.println("parseGroupInfos() Invalid format: \"" + group + "\"");
-                continue;
+                throw new InvalidFormatException("Invalid GroupInfo Format: \"" + group + "\"\nGroup infos must be specified as a semi-colon separated list of group id, alias and description (divided by colon). Example: MyGroupId:My Group Alias:My Group Description;");
             }
             
             this.groupInfos.put(tags[0], new GroupInfo(tags[1], tags[2]));
@@ -261,10 +330,6 @@ public class Options {
     
     public String getLayoutDir() {
         return this.layoutDir;
-    }
-    
-    public String getDocumentTitle() {
-        return this.documentTitle;
     }
     
     public Visibility getMinimumVisibility() {
@@ -311,6 +376,10 @@ public class Options {
         return this.sortFields;
     }
     
+    public boolean getShowHelp() {
+        return this.showHelp;
+    }
+    
     public List<String> getAnnotationsToBeRemoved() {
         return this.annotationsToBeRemoved;
     }
@@ -341,7 +410,6 @@ public class Options {
         result += LF + "defaultDocumentGroup = " + this.defaultDocumentGroup;
         result += LF + "outputDir = " + this.outputDir;
         result += LF + "fileSuffix = " + this.fileSuffix;
-        result += LF + "documentTitle = " + this.documentTitle;
         result += LF + "minimumVisibility = " + this.minimumVisibility;
         result += LF + "noEnums = " + this.noEnums;
         result += LF + "noInterfaces = " + this.noInterfaces;

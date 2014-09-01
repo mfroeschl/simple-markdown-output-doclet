@@ -43,8 +43,11 @@ public class Editor {
     
     public void authorDocument(RootDoc root) {
         ClassDoc[] classes = root.classes();
+        
         System.out.println("\n\nSimple Markdown Output Doclet");
         System.out.println("=============================");
+        System.out.println("Version " + MarkdownOutputDoclet.VERSION_STRING);
+        System.out.println("-----------------------------");
         System.out.println("");
         System.out.println(this.options.toString());
         System.out.println("");
