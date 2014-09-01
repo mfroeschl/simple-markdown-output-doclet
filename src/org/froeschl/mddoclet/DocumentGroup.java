@@ -8,21 +8,39 @@ public class DocumentGroup {
     private static final String BRCLOSE = ")";
     private static final String COMMA = ",";
     
-    final String title;
+    final String id;
+    final String alias;
+    final String description;
     final String file;
     final String fullFilePath;
     final HashMap<String, String> classes = new HashMap<String, String>();
     final boolean isDefault;
     
-    public DocumentGroup(String title, String file, String fullFilePath, boolean isDefault) {
-        this.title = title;
+    public DocumentGroup(
+            String id,
+            String alias,
+            String description,
+            String file,
+            String fullFilePath,
+            boolean isDefault) {
+        this.id = id;
+        this.alias = alias;
+        this.description = description;
         this.file = file;
         this.fullFilePath = fullFilePath;
         this.isDefault = isDefault;
     }
     
-    public String getTitle() {
-        return this.title;
+    public String getId() {
+        return this.id;
+    }
+    
+    public String getAlias() {
+        return this.alias;
+    }
+    
+    public String getDescription() {
+        return this.description;
     }
     
     public String getFile() {
@@ -52,7 +70,7 @@ public class DocumentGroup {
     @Override
     public String toString() {
         boolean first = true;
-        String result = this.title;
+        String result = this.id;
         // result += " [" + this.fullFilePath + "] ";
         
         for ( String entry : classes.values() ) {

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.froeschl.mddoclet.utils.FileUtils;
 
@@ -40,6 +41,16 @@ public class Options {
         }
     }
     
+    private static class GroupInfo {
+        private final String alias;
+        private final String description;
+        
+        public GroupInfo(String alias, String description) {
+            this.alias = alias;
+            this.description = description;
+        }
+    }
+    
     public static final String KEY_DEFAULT_DOCUMENT_GROUP = "-defaultGroup";
     public static final String KEY_OUTPUT_DIR = "-outputdir";
     public static final String KEY_FILE_SUFFIX = "-filesuffix";
@@ -54,10 +65,13 @@ public class Options {
     public static final String KEY_OMMIT_EMPTY_SECTIONS = "-ommitempty";
     public static final String KEY_OMMIT_VOID_RETURN_TYPE = "-ommitvoid";
     public static final String KEY_ANNOTATIONS_TO_BE_REMOVED = "-removeannotations";
+    public static final String KEY_GROUP_INFOS = "-groupinfo";
     
     private static final String LF = "\n";
     private static final String INDENT = "    ";
     private static final String COMMA = ",";
+    private static final String COLON = ":";
+    private static final String SEMICOLON = ";";
     private static final String DEFAULT_DEFAULT_DOCUMENT_GROUP = "index";
     private static final String DEFAULT_OUTPUT_DIR = ".";
     private static final String DEFAULT_FILE_SUFFIX = ".md";
@@ -72,6 +86,7 @@ public class Options {
     private static final boolean DEFAULT_OMMIT_EMPTY_SECTIONS = false;
     private static final boolean DEFAULT_OMMIT_VOID_RETURN_TYPE = false;
     private static final ArrayList<String> DEFAULT_ANNOTATIONS_TO_BE_REMOVED = new ArrayList<String>();
+    private static final HashMap<String, GroupInfo> DEFAULT_GROUP_INFOS = new HashMap<String, GroupInfo>();
     
     public static Map<String, Integer> optionToOptionLength;
     
@@ -85,6 +100,7 @@ public class Options {
         Options.optionToOptionLength.put(KEY_DOCUMENT_TITLE, 2);
         Options.optionToOptionLength.put(KEY_MINIMUM_VISIBILITY, 2);
         Options.optionToOptionLength.put(KEY_ANNOTATIONS_TO_BE_REMOVED, 2);
+        Options.optionToOptionLength.put(KEY_GROUP_INFOS, 2);
         Options.optionToOptionLength.put(KEY_NO_ENUMS, 1);
         Options.optionToOptionLength.put(KEY_NO_INTERFACES, 1);
         Options.optionToOptionLength.put(KEY_NO_NESTED_CLASSES, 1);
@@ -107,6 +123,7 @@ public class Options {
     private boolean ommitEmptySections = DEFAULT_OMMIT_EMPTY_SECTIONS;
     private boolean ommitVoidReturnType = DEFAULT_OMMIT_VOID_RETURN_TYPE;
     private ArrayList<String> annotationsToBeRemoved = DEFAULT_ANNOTATIONS_TO_BE_REMOVED;
+    private HashMap<String, GroupInfo> groupInfos = DEFAULT_GROUP_INFOS;
     
     private Options() {
     }
@@ -148,6 +165,8 @@ public class Options {
                 this.minimumVisibility = Visibility.fromString(option[1]);
             } else if ( option[0].equals(KEY_ANNOTATIONS_TO_BE_REMOVED) ) {
                 this.parseAnnotationsToBeRemoved(option[1]);
+            } else if ( option[0].equals(KEY_GROUP_INFOS) ) {
+                this.parseGroupInfos(option[1]);
             } else if ( option[0].equals(KEY_NO_ENUMS) ) {
                 this.noEnums = true;
             } else if ( option[0].equals(KEY_NO_INTERFACES) ) {
@@ -171,6 +190,28 @@ public class Options {
             if ( !annotation.isEmpty() )  {
                 this.annotationsToBeRemoved.add(annotation);
             }
+        }
+    }
+    
+    private void parseGroupInfos(String input) {
+        // Group:Alias:Description;
+        
+        this.groupInfos.clear();
+        
+        String[] groups = input.split(SEMICOLON);
+        for ( String group : groups ) {
+            if ( group.isEmpty() ) {
+                continue;
+            }
+            
+            String[] tags = group.split(COLON);
+            
+            if ( tags.length != 3 || tags[0] == null || tags[0].isEmpty() || tags[1] == null || tags[1].isEmpty() || tags[2] == null || tags[2].isEmpty() ) {
+                System.out.println("parseGroupInfos() Invalid format: \"" + group + "\"");
+                continue;
+            }
+            
+            this.groupInfos.put(tags[0], new GroupInfo(tags[1], tags[2]));
         }
     }
     
@@ -234,6 +275,26 @@ public class Options {
         return this.annotationsToBeRemoved;
     }
     
+    public String getAliasForGroup(String groupId) {
+        GroupInfo groupInfo = this.groupInfos.get(groupId);
+        
+        if ( groupInfo == null ) {
+            return groupId;
+        } else {
+            return groupInfo.alias;
+        }
+    }
+    
+    public String getDescriptionForGroup(String groupId) {
+        GroupInfo groupInfo = this.groupInfos.get(groupId);
+        
+        if ( groupInfo == null ) {
+            return "";
+        } else {
+            return groupInfo.description;
+        }
+    }
+    
     @Override
     public String toString() {
         String result = "Options:";
@@ -257,6 +318,11 @@ public class Options {
         }
         
         result += LF + "}";
+        result += LF + "groupInfos = {";
+        
+        for ( Entry<String, GroupInfo> entry : this.groupInfos.entrySet() ) {
+            result += LF + INDENT + entry.getKey() + ": " + entry.getValue().alias + ", " + entry.getValue().description + ";";
+        }
         
         result += LF + "}";
         return result;

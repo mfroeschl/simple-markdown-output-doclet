@@ -68,6 +68,7 @@ public class Layouter {
     private static final String VAR_GROUP_LIST_ITEMS = "%GROUP_LIST_ITEMS%";
     private static final String VAR_GROUP_LIST_ITEMS_HEADER = "%GROUP_LIST_ITEMS_HEADER%";
     private static final String VAR_GROUP_TITLE = "%GROUP_TITLE%";
+    private static final String VAR_GROUP_DESCRIPTION = "%GROUP_DESCRIPTION%";
     private static final String VAR_CLASS_LIST_ITEMS = "%CLASS_LIST_ITEMS%";
     private static final String VAR_CLASS_LIST_ITEMS_HEADER = "%CLASS_LIST_ITEMS_HEADER%";
     private static final String VAR_CLASS_LINK = "%CLASS_LINK%";
@@ -295,7 +296,13 @@ public class Layouter {
         String defaultGroupName = this.options.getDefaultDocumentGroup();
         String defaultGroupFullFilePath = this.options.generateFullFilename(defaultGroupName);
         String defaultGroupFilePath = defaultGroupName + this.options.getFileSuffix();
-        DocumentGroup defaultGroup = new DocumentGroup(defaultGroupName, defaultGroupFilePath, defaultGroupFullFilePath, true);
+        DocumentGroup defaultGroup = new DocumentGroup(
+                defaultGroupName,
+                this.options.getAliasForGroup(defaultGroupName),
+                this.options.getDescriptionForGroup(defaultGroupName),
+                defaultGroupFilePath,
+                defaultGroupFullFilePath,
+                true);
         this.documentGroups.put(defaultGroupName, defaultGroup);
         
         // parse all other groups
@@ -306,7 +313,13 @@ public class Layouter {
             if ( group == null ) {
                 String fullFilePath = this.options.generateFullFilename(groupName);
                 String filePath = groupName + this.options.getFileSuffix();
-                group = new DocumentGroup(groupName, filePath, fullFilePath, false);
+                group = new DocumentGroup(
+                        groupName,
+                        this.options.getAliasForGroup(groupName),
+                        this.options.getDescriptionForGroup(groupName),
+                        filePath,
+                        fullFilePath,
+                        false);
                 this.documentGroups.put(groupName, group);
             }
             
@@ -367,9 +380,17 @@ public class Layouter {
         String classListItems = "";
         
         for ( DocumentGroup group : this.documentGroups.values() ) {
+            if ( group.isDefault() ) {
+                continue;
+            }
+            
             String item = itemLayout;
             if ( item.contains(VAR_GROUP_TITLE) ) {
-                item = item.replace(VAR_GROUP_TITLE, this.createLinkIfAnchorExists(group.getTitle(), group.getFile()));
+                item = item.replace(VAR_GROUP_TITLE, this.createLinkIfAnchorExists(group.getAlias(), group.getFile()));
+            }
+            
+            if ( item.contains(VAR_GROUP_DESCRIPTION) ) {
+                item = item.replace(VAR_GROUP_DESCRIPTION, group.getDescription());
             }
             
             classListItems += item;
@@ -390,7 +411,7 @@ public class Layouter {
             this.currentOutputFileFullPath = group.getFullFilePath();
             this.currentOutputFile = group.getFile();
             
-            String layout = this.loadLayoutFile(group.getTitle() + HEADER_SUFFIX + LAYOUT_FILE_EXTENSION);
+            String layout = this.loadLayoutFile(group.getId() + HEADER_SUFFIX + LAYOUT_FILE_EXTENSION);
             
             if ( layout.contains(VAR_LAST_UPDATED) ) {
                 layout = layout.replace(VAR_LAST_UPDATED, dateText);

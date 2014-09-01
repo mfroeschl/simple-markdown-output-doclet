@@ -40,8 +40,8 @@ public class Editor {
         System.out.println(this.options.toString());
         System.out.println("");
         
-        this.deleteGroupFiles();
         this.parseGroups(classes);
+        this.deleteGroupFiles();
         
         this.layouter.setMode(Mode.PREPARE);
         // this.layouter.printDocumentTitleAndHeader();
