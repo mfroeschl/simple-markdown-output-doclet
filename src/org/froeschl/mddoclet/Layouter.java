@@ -1007,7 +1007,7 @@ public class Layouter {
     
     private String generateFullMethodSignatureWithParameterNames(MethodDoc methodDoc, List<String> annotationsToRemove, boolean indent, boolean generateLinks) {
         boolean first = true;
-        String result = methodDoc.modifiers() + WS + methodDoc.returnType() + WS + methodDoc.name() + BROPEN;
+        String result = methodDoc.modifiers() + WS + methodDoc.returnType().typeName() + WS + methodDoc.name() + BROPEN;
         int indentSize = result.length();
         String indentText = "";
         
