@@ -67,9 +67,10 @@ public class Options {
     
     private static final String KEY_DEFAULT_DOCUMENT_GROUP = "-defaultGroup";
     private static final String KEY_OUTPUT_DIR = "-outputdir";
-    private static final String KEY_FILE_SUFFIX = "-filesuffix";
+    private static final String KEY_FILE_EXTENSION = "-extension";
     private static final String KEY_INCLUDE_DIR = "-includedir";
     private static final String KEY_LAYOUT_DIR = "-layoutdir";
+    private static final String KEY_GROUP_HEADER_DIR = "-headerdir";
     private static final String KEY_MINIMUM_VISIBILITY = "-visibility";
     private static final String KEY_NO_INTERFACES = "-nointerfaces";
     private static final String KEY_NO_ENUMS = "-noenums";
@@ -93,9 +94,10 @@ public class Options {
     private static final String SEMICOLON = ";";
     private static final String DEFAULT_DEFAULT_DOCUMENT_GROUP = "index";
     private static final String DEFAULT_OUTPUT_DIR = ".";
-    private static final String DEFAULT_FILE_SUFFIX = ".md";
+    private static final String DEFAULT_FILE_EXTENSION = ".md";
     private static final String DEFAULT_INCLUDE_DIR = "./include";
-    private static final String DEFAULT_LAYOUT_DIR = "./layouts/markdown";
+    private static final String DEFAULT_LAYOUT_DIR = "./layout";
+    private static final String DEFAULT_GROUP_HEADER_DIR = "./headers";
     private static final Visibility DEFAULT_MINIMUM_VISIBILITY = Visibility.PUBLIC;
     private static final boolean DEFAULT_NO_ENUMS = false;
     private static final boolean DEFAULT_NO_INTERFACES = false;
@@ -117,9 +119,10 @@ public class Options {
         Options.options = new HashMap<String, OptionInfo>();
         Options.options.put(KEY_DEFAULT_DOCUMENT_GROUP, new OptionInfo(2, "<name>", "Name of the default document group."));
         Options.options.put(KEY_OUTPUT_DIR, new OptionInfo(2, "<path>", "Path to the output directory."));
-        Options.options.put(KEY_FILE_SUFFIX, new OptionInfo(2, "<extension>", "File extension for output files."));
+        Options.options.put(KEY_FILE_EXTENSION, new OptionInfo(2, "<extension>", "Extension for input and output files."));
         Options.options.put(KEY_INCLUDE_DIR, new OptionInfo(2, "<path>", "Path to the input directory."));
         Options.options.put(KEY_LAYOUT_DIR, new OptionInfo(2, "<path>", "Path to the layout directory."));
+        Options.options.put(KEY_GROUP_HEADER_DIR, new OptionInfo(2, "<path>", "Path to the group header directory."));
         Options.options.put(KEY_MINIMUM_VISIBILITY, new OptionInfo(2, "<visibility>", "Minimum visibility for elements to be included."));
         Options.options.put(KEY_ANNOTATIONS_TO_BE_REMOVED, new OptionInfo(2, "<list>", "List of annotations to be removed."));
         Options.options.put(KEY_GROUP_INFOS, new OptionInfo(2, "<list>", "Semi-colon sepatared list of group infos."));
@@ -138,9 +141,10 @@ public class Options {
     
     private String defaultDocumentGroup = DEFAULT_DEFAULT_DOCUMENT_GROUP;
     private String outputDir = DEFAULT_OUTPUT_DIR;
-    private String fileSuffix = DEFAULT_FILE_SUFFIX;
+    private String fileExtension = DEFAULT_FILE_EXTENSION;
     private String includeDir = DEFAULT_INCLUDE_DIR;
     private String layoutDir = DEFAULT_LAYOUT_DIR;
+    private String groupHeaderDir = DEFAULT_GROUP_HEADER_DIR;
     private Visibility minimumVisibility = DEFAULT_MINIMUM_VISIBILITY;
     private boolean noEnums = DEFAULT_NO_ENUMS;
     private boolean noInterfaces = DEFAULT_NO_INTERFACES;
@@ -171,7 +175,6 @@ public class Options {
         if ( optionInfo == null ) {
             return 0;
         } else if ( KEY_SHOW_HELP.equals(option) ) {
-            System.out.println("Printing options (usage)");
             Options.printHelp();
             return 0;
         } else {
@@ -186,7 +189,6 @@ public class Options {
             options.parseCommandLine(input);
         } catch ( InvalidFormatException e ) {
             reporter.printError(e.getMessage());
-            System.out.println("Printing options (format exception)");
             Options.printHelp();
             return false;
         }
@@ -228,12 +230,14 @@ public class Options {
                 this.defaultDocumentGroup = option[1];
             } else if ( option[0].equals(KEY_OUTPUT_DIR) ) {
                 this.outputDir = option[1];
-            } else if ( option[0].equals(KEY_FILE_SUFFIX) ) {
-                this.fileSuffix = option[1];
+            } else if ( option[0].equals(KEY_FILE_EXTENSION) ) {
+                this.fileExtension = option[1];
             } else if ( option[0].equals(KEY_INCLUDE_DIR) ) {
                 this.includeDir = option[1];
             } else if ( option[0].equals(KEY_LAYOUT_DIR) ) {
                 this.layoutDir = option[1];
+            } else if ( option[0].equals(KEY_GROUP_HEADER_DIR) ) {
+                this.groupHeaderDir = option[1];
             } else if ( option[0].equals(KEY_MINIMUM_VISIBILITY) ) {
                 this.minimumVisibility = Visibility.fromString(option[1]);
             } else if ( option[0].equals(KEY_ANNOTATIONS_TO_BE_REMOVED) ) {
@@ -316,12 +320,12 @@ public class Options {
         return this.outputDir;
     }
     
-    public String getFileSuffix() {
-        return this.fileSuffix;
+    public String getFileExtension() {
+        return this.fileExtension;
     }
     
     public String generateFullFilename(String filename) {
-        return FileUtils.appendToPath(this.outputDir, filename + this.fileSuffix);
+        return FileUtils.appendToPath(this.outputDir, filename + this.fileExtension);
     }
     
     public String getIncludeDir() {
@@ -330,6 +334,10 @@ public class Options {
     
     public String getLayoutDir() {
         return this.layoutDir;
+    }
+    
+    public String getGroupHeaderDir() {
+        return this.groupHeaderDir;
     }
     
     public Visibility getMinimumVisibility() {
@@ -409,7 +417,7 @@ public class Options {
         String result = "Options:";
         result += LF + "defaultDocumentGroup = " + this.defaultDocumentGroup;
         result += LF + "outputDir = " + this.outputDir;
-        result += LF + "fileSuffix = " + this.fileSuffix;
+        result += LF + "fileExtension = " + this.fileExtension;
         result += LF + "minimumVisibility = " + this.minimumVisibility;
         result += LF + "noEnums = " + this.noEnums;
         result += LF + "noInterfaces = " + this.noInterfaces;

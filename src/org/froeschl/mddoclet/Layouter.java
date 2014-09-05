@@ -43,29 +43,29 @@ public class Layouter {
     private static final String BRCLOSE = ")";
     private static final String INDENT = "    ";
     
-    private static final String LAYOUT_GROUP_LIST = "GroupList.layout";
-    private static final String LAYOUT_GROUP_LIST_ITEMS_HEADER = "GroupListItemsHeader.layout";
-    private static final String LAYOUT_GROUP_LIST_ITEM = "GroupListItem.layout";
-    private static final String LAYOUT_CLASS_LIST = "ClassList.layout";
-    private static final String LAYOUT_CLASS_LIST_ITEMS_HEADER = "ClassListItemsHeader.layout";
-    private static final String LAYOUT_CLASS_LIST_ITEM = "ClassListItem.layout";
-    private static final String LAYOUT_CLASS_DESCRIPTION = "ClassDescription.layout";
-    private static final String LAYOUT_METHOD_LIST = "MethodList.layout";
-    private static final String LAYOUT_METHOD_LIST_ITEMS_HEADER = "MethodListItemsHeader.layout";
-    private static final String LAYOUT_METHOD_LIST_ITEM = "MethodListItem.layout";
-    private static final String LAYOUT_METHOD_DESCRIPTION = "MethodDescription.layout";
-    private static final String LAYOUT_METHOD_RETURN_INFO = "MethodReturnInfo.layout";
-    private static final String LAYOUT_METHOD_DETAIL_HEADER = "MethodDetailHeader.layout";
-    private static final String LAYOUT_PARAMETER_LIST = "ParameterList.layout";
-    private static final String LAYOUT_PARAMETER_LIST_ITEMS_HEADER = "ParameterListItemsHeader.layout";
-    private static final String LAYOUT_PARAMETER_LIST_ITEM = "ParameterListItem.layout";
-    private static final String LAYOUT_FIELD_LIST = "FieldList.layout";
-    private static final String LAYOUT_FIELD_LIST_ITEMS_HEADER = "FieldListItemsHeader.layout";
-    private static final String LAYOUT_FIELD_LIST_ITEM = "FieldListItem.layout";
-    private static final String LAYOUT_EMPTY_LIST = "EmptyList.layout";
-    private static final String LAYOUT_HEADER_AUTHOR = "AuthorHeader.layout";
-    private static final String LAYOUT_HEADER_VERSION = "VersionHeader.layout";
-    private static final String LAYOUT_HEADER_SINCE = "SinceHeader.layout";
+    private static final String LAYOUT_GROUP_LIST = "GroupList";
+    private static final String LAYOUT_GROUP_LIST_ITEMS_HEADER = "GroupListItemsHeader";
+    private static final String LAYOUT_GROUP_LIST_ITEM = "GroupListItem";
+    private static final String LAYOUT_CLASS_LIST = "ClassList";
+    private static final String LAYOUT_CLASS_LIST_ITEMS_HEADER = "ClassListItemsHeader";
+    private static final String LAYOUT_CLASS_LIST_ITEM = "ClassListItem";
+    private static final String LAYOUT_CLASS_DESCRIPTION = "ClassDescription";
+    private static final String LAYOUT_METHOD_LIST = "MethodList";
+    private static final String LAYOUT_METHOD_LIST_ITEMS_HEADER = "MethodListItemsHeader";
+    private static final String LAYOUT_METHOD_LIST_ITEM = "MethodListItem";
+    private static final String LAYOUT_METHOD_DESCRIPTION = "MethodDescription";
+    private static final String LAYOUT_METHOD_RETURN_INFO = "MethodReturnInfo";
+    private static final String LAYOUT_METHOD_DETAIL_HEADER = "MethodDetailHeader";
+    private static final String LAYOUT_PARAMETER_LIST = "ParameterList";
+    private static final String LAYOUT_PARAMETER_LIST_ITEMS_HEADER = "ParameterListItemsHeader";
+    private static final String LAYOUT_PARAMETER_LIST_ITEM = "ParameterListItem";
+    private static final String LAYOUT_FIELD_LIST = "FieldList";
+    private static final String LAYOUT_FIELD_LIST_ITEMS_HEADER = "FieldListItemsHeader";
+    private static final String LAYOUT_FIELD_LIST_ITEM = "FieldListItem";
+    private static final String LAYOUT_EMPTY_LIST = "EmptyList";
+    private static final String LAYOUT_HEADER_AUTHOR = "AuthorHeader";
+    private static final String LAYOUT_HEADER_VERSION = "VersionHeader";
+    private static final String LAYOUT_HEADER_SINCE = "SinceHeader";
     
     private static final String VAR_GROUP_LIST_ITEMS = "%GROUP_LIST_ITEMS%";
     private static final String VAR_GROUP_LIST_ITEMS_HEADER = "%GROUP_LIST_ITEMS_HEADER%";
@@ -116,7 +116,6 @@ public class Layouter {
     private static final String CLASS = "class";
     private static final String RETURN_TYPE_VOID = "void";
     private static final String HEADER_SUFFIX = "Header";
-    private static final String LAYOUT_FILE_EXTENSION = ".layout";
     
     private static final String TAG_LINK = "@link";
     private static final String TAG_RETURN = "@return";
@@ -284,9 +283,25 @@ public class Layouter {
         return "";
     }
     
+    private String loadGroupHeaderFile(String groupHeaderFile) {
+        if ( groupHeaderFile != null && groupHeaderFile.length() > 0 ) {
+            String fullPath = FileUtils.appendToPath(this.options.getGroupHeaderDir(), groupHeaderFile + HEADER_SUFFIX + this.options.getFileExtension());
+            String data = "";
+            try {
+                data = FileUtils.readFileIntoString(fullPath);
+            } catch ( IOException e ) {
+                e.printStackTrace();
+            }
+            
+            return data;
+        }
+        
+        return "";
+    }
+    
     private String loadLayoutFile(String layoutFile) {
         if ( layoutFile != null && layoutFile.length() > 0 ) {
-            String fullPath = FileUtils.appendToPath(this.options.getLayoutDir(), layoutFile);
+            String fullPath = FileUtils.appendToPath(this.options.getLayoutDir(), layoutFile + this.options.getFileExtension());
             String data = "";
             try {
                 data = FileUtils.readFileIntoString(fullPath);
@@ -304,7 +319,7 @@ public class Layouter {
         // add default group
         String defaultGroupName = this.options.getDefaultDocumentGroup();
         String defaultGroupFullFilePath = this.options.generateFullFilename(defaultGroupName);
-        String defaultGroupFilePath = defaultGroupName + this.options.getFileSuffix();
+        String defaultGroupFilePath = defaultGroupName + this.options.getFileExtension();
         DocumentGroup defaultGroup = new DocumentGroup(
                 defaultGroupName,
                 this.options.getAliasForGroup(defaultGroupName),
@@ -321,7 +336,7 @@ public class Layouter {
             
             if ( group == null ) {
                 String fullFilePath = this.options.generateFullFilename(groupName);
-                String filePath = groupName + this.options.getFileSuffix();
+                String filePath = groupName + this.options.getFileExtension();
                 group = new DocumentGroup(
                         groupName,
                         this.options.getAliasForGroup(groupName),
@@ -426,7 +441,7 @@ public class Layouter {
             this.currentOutputFileFullPath = group.getFullFilePath();
             this.currentOutputFile = group.getFile();
             
-            String layout = this.loadLayoutFile(group.getId() + HEADER_SUFFIX + LAYOUT_FILE_EXTENSION);
+            String layout = this.loadGroupHeaderFile(group.getId());
             
             if ( layout.contains(VAR_LAST_UPDATED) ) {
                 layout = layout.replace(VAR_LAST_UPDATED, dateText);
